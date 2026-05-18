@@ -356,7 +356,8 @@ export const CCTNSPage = () => {
   const fmtDate = (val: any) => {
     if (!val) return '—';
     const d = new Date(val);
-    return isNaN(d.getTime()) ? String(val) : d.toLocaleDateString('en-IN');
+    if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
+    return d.toLocaleDateString('en-IN');
   };
 
   const recordCols: Column<any>[] = [
@@ -1006,12 +1007,12 @@ export const CCTNSPage = () => {
                       effClassOfInc && `Class: ${effClassOfInc}`,
                       effFromDate && `From: ${effFromDate}`,
                       effToDate && `To: ${effToDate}`,
-                      urlPendencyAge && (urlPendencyAge === 'u7' ? 'Pendency: < 7 Days' :
+                      urlPendencyAge && (urlPendencyAge === 'u7' ? 'Pendency: Within 7 Days' :
                         urlPendencyAge === 'u15' ? 'Pendency: Within 15 Days' :
                           urlPendencyAge === 'u30' ? 'Pendency: Within 30 Days' :
                             urlPendencyAge === 'o30' ? 'Pendency: Within 2 Months' :
                               urlPendencyAge === 'o60' ? 'Pendency: Over 2 Months' : `Pendency: ${urlPendencyAge}`),
-                      urlDisposalAge && (urlDisposalAge === 'u7' ? 'Disposal: < 7 Days' :
+                      urlDisposalAge && (urlDisposalAge === 'u7' ? 'Disposal: Within 7 Days' :
                         urlDisposalAge === 'u15' ? 'Disposal: Within 15 Days' :
                           urlDisposalAge === 'u30' ? 'Disposal: Within 30 Days' :
                             urlDisposalAge === 'o30' ? 'Disposal: Within 2 Months' :

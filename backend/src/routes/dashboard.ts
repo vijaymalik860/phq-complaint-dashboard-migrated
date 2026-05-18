@@ -537,7 +537,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       do60: stats.do60,
       avgDisposalDays: stats.disposed - stats.missingDates > 0
         ? Math.round(stats.totalDisposalDays / (stats.disposed - stats.missingDates))
-        : 0,
+        : null,
     }));
 
     const categories = Array.from(categoryMap.entries()).map(([category, stats]) => ({ category, ...stats }));

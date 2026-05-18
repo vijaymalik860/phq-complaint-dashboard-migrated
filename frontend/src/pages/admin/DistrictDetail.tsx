@@ -147,8 +147,15 @@ export const DistrictDetail = () => {
   const totalMissingDates = policeStations.reduce((sum: number, ps: any) => sum + (ps.missingDates || 0), 0);
   const totalDisposedWithDate = totalDisposed - totalMissingDates;
   const totalUnknown = policeStations.reduce((sum: number, ps: any) => sum + (ps.unknown || 0), 0);
-  const totalDisposedDays = policeStations.reduce((sum: number, ps: any) => sum + (ps.avgDisposalDays * (ps.disposed - (ps.missingDates || 0))), 0);
-  const avgDisposalTime = totalDisposedWithDate > 0 ? Math.round(totalDisposedDays / totalDisposedWithDate) : 0;
+  // Aggregate total disposal days from raw ps data using actual counts and days
+  // avgDisposalDays from backend is null when no real data exists — do not treat null as 0
+  const totalDisposedDays = policeStations.reduce((sum: number, ps: any) => {
+    const withDate = (ps.disposed || 0) - (ps.missingDates || 0);
+    return sum + (typeof ps.avgDisposalDays === 'number' ? ps.avgDisposalDays * withDate : 0);
+  }, 0);
+  const avgDisposalTime: number | null = totalDisposedWithDate > 0
+    ? Math.round(totalDisposedDays / totalDisposedWithDate)
+    : null;
 
   // ── Police Station Summary Table ──────────────────────────────────────────
   const psCols: Column<any>[] = [
@@ -214,7 +221,10 @@ export const DistrictDetail = () => {
     if (col.key === 'u30') return <ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color="#fb923c" fw={500} />;
     if (col.key === 'o30') return <ClickableCell value={row.o30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o30' }} color="#ef4444" fw="bold" />;
     if (col.key === 'o60') return <ClickableCell value={row.o60 || 0} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o60' }} color="#b91c1c" fw="bold" />;
-    if (col.key === 'avgDisposalDays') return <span style={{ color: '#c084fc' }}>{row.avgDisposalDays}d</span>;
+    if (col.key === 'avgDisposalDays') {
+      const val = row.avgDisposalDays;
+      return <span style={{ color: '#c084fc' }}>{typeof val === 'number' ? `${val}d` : '—'}</span>;
+    }
     return row[col.key];
   };
 
@@ -484,7 +494,7 @@ export const DistrictDetail = () => {
               />
               <StatCard
                 label="Avg. Disposal Time"
-                value={`${avgDisposalTime} Days`}
+                value={avgDisposalTime !== null ? `${avgDisposalTime} Days` : '—'}
                 subValue="Only for records where date was found"
                 colorClass="purple"
               />

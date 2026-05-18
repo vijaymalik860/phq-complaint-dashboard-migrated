@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
@@ -406,10 +406,10 @@ export const DashboardPage = () => {
   const renderMatrixDays = (col: any, row: any) => {
     if (col.key === 'district') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total') return mkCell(row.total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
-    if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
-    if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
-    if (col.key === 'o30') return mkCell(row.o30, '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending 1-2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
+    if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
+    if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
+    if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending Within 30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
+    if (col.key === 'o30') return mkCell(row.o30, '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending Within 2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
     if (col.key === 'o60') return mkCell(row.o60 || 0, '#b91c1c',    'bold',    row.district ? () => openDrawer(`${row.district} — Pending Over 2 Months`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -435,10 +435,10 @@ export const DashboardPage = () => {
     );
     if (col.key === 'district')  return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total') return mkPct(row.pct_total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
-    if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
-    if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
-    if (col.key === 'pct_o30')  return mkPct(row.pct_o30,  '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending 1-2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
+    if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
+    if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
+    if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending Within 30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
+    if (col.key === 'pct_o30')  return mkPct(row.pct_o30,  '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending Within 2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
     if (col.key === 'pct_o60')  return mkPct(row.pct_o60 || 0, '#b91c1c',      'bold',    row.district ? () => openDrawer(`${row.district} — Pending Over 2 Months`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -475,10 +475,10 @@ export const DashboardPage = () => {
     if (col.key === 'district')     return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total')        return mkCell(row.total,           '#4ade80', 600,    row.district ? () => openDrawer(`${row.district} — Disposed`,               drawerFiltersForDistrict(row.district, 'disposed')) : undefined);
     if (col.key === 'missingDates') return mkCell(row.missingDates || 0, '#fbbf24', 600,  row.district ? () => openDrawer(`${row.district} — Disposed (Date Not Found)`, drawerFiltersForDistrict(row.district, 'disposed_missing_date')) : undefined);
-    if (col.key === 'u7')           return mkCell(row.u7,             '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed <7 Days`,      drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
-    if (col.key === 'u15')          return mkCell(row.u15,            '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed 7-15 Days`,    drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
-    if (col.key === 'u30')          return mkCell(row.u30,            '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed 15-30 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
-    if (col.key === 'o30')          return mkCell(row.o30,            '#ef4444', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed 1-2 Months`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o30' })) : undefined);
+    if (col.key === 'u7')           return mkCell(row.u7,             '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 7 Days`,      drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
+    if (col.key === 'u15')          return mkCell(row.u15,            '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 15 Days`,    drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
+    if (col.key === 'u30')          return mkCell(row.u30,            '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 30 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
+    if (col.key === 'o30')          return mkCell(row.o30,            '#ef4444', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed Within 2 Months`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o30' })) : undefined);
     if (col.key === 'o60')          return mkCell(row.o60 || 0,       '#b91c1c', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed Over 2 Months`, drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -506,10 +506,10 @@ export const DashboardPage = () => {
     if (col.key === 'district')    return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total')   return mkDPct(row.pct_total,       '#4ade80', 600,    row.district ? () => openDrawer(`${row.district} — Disposed`,               drawerFiltersForDistrict(row.district, 'disposed')) : undefined);
     if (col.key === 'pct_missing') return mkDPct(row.pct_missing || 0,'#fbbf24', 600,    row.district ? () => openDrawer(`${row.district} — Disposed (Date Not Found)`, drawerFiltersForDistrict(row.district, 'disposed_missing_date')) : undefined);
-    if (col.key === 'pct_u7')      return mkDPct(row.pct_u7,          '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed <7 Days`,     drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
-    if (col.key === 'pct_u15')     return mkDPct(row.pct_u15,         '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed 7-15 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
-    if (col.key === 'pct_u30')     return mkDPct(row.pct_u30,         '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed 15-30 Days`,  drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
-    if (col.key === 'pct_o30')     return mkDPct(row.pct_o30,         '#ef4444', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed 1-2 Months`,  drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o30' })) : undefined);
+    if (col.key === 'pct_u7')      return mkDPct(row.pct_u7,          '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 7 Days`,     drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
+    if (col.key === 'pct_u15')     return mkDPct(row.pct_u15,         '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 15 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
+    if (col.key === 'pct_u30')     return mkDPct(row.pct_u30,         '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 30 Days`,  drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
+    if (col.key === 'pct_o30')     return mkDPct(row.pct_o30,         '#ef4444', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed Within 2 Months`,  drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o30' })) : undefined);
     if (col.key === 'pct_o60')     return mkDPct(row.pct_o60 || 0,    '#b91c1c', 'bold',    row.district ? () => openDrawer(`${row.district} — Disposed Over 2 Months`,drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -789,12 +789,12 @@ export const DashboardPage = () => {
                 data={sortedDistricts}
                 columns={[
                   { key: 'district', label: 'District', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
-                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#ef4444', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Pending`, drawerFiltersForDistrict(row.district, 'pending')); }}>{row.pending}</span> : <span style={{ color: '#ef4444' }}>{row.pending}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
+                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#ef4444', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Pending`, drawerFiltersForDistrict(row.district, 'pending')); }}>{row.pending}</span> : <span style={{ color: '#ef4444' }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed ? row.pending_pct.toFixed(1) : row.pending_pct}%</span> },
-                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#16a34a', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Disposed`, drawerFiltersForDistrict(row.district, 'disposed')); }}>{row.disposed}</span> : <span style={{ color: '#16a34a' }}>{row.disposed}</span> },
+                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#16a34a', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Disposed`, drawerFiltersForDistrict(row.district, 'disposed')); }}>{row.disposed}</span> : <span style={{ color: '#16a34a' }}>{row.disposed}</span> },
                   { key: 'disposed_pct', label: 'Disposed %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.disposed_pct?.toFixed ? row.disposed_pct.toFixed(1) : row.disposed_pct}%</span> },
-                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#64748b', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Status NF`, drawerFiltersForDistrict(row.district, 'unknown')); }}>{row.unknown || 0}</span> : <span style={{ color: '#64748b' }}>{row.unknown || 0}</span> },
+                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#64748b', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Status NF`, drawerFiltersForDistrict(row.district, 'unknown')); }}>{row.unknown || 0}</span> : <span style={{ color: '#64748b' }}>{row.unknown || 0}</span> },
                   { key: 'unknown_pct', label: 'Status NF %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#64748b', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.unknown_pct?.toFixed ? row.unknown_pct.toFixed(1) : row.unknown_pct}%</span> },
                 ]}
                 maxHeight="300px"
@@ -841,16 +841,16 @@ export const DashboardPage = () => {
                 data={sortedCategories}
                 columns={[
                   { key: 'category', label: 'Class of Incident', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: '#60a5fa' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
-                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Pending`, drawerFiltersForCategory(row.category, 'pending')); }}>{row.pending}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: '#60a5fa' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
+                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Pending`, drawerFiltersForCategory(row.category, 'pending')); }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed(1)}%</span> },
-                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#16a34a' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Disposed`, drawerFiltersForCategory(row.category, 'disposed')); }}>{row.disposed}</span> },
+                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#16a34a' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Disposed`, drawerFiltersForCategory(row.category, 'disposed')); }}>{row.disposed}</span> },
                   { key: 'disposed_pct', label: 'Disposed %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.disposed_pct?.toFixed(1)}%</span> },
-                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#64748b' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Status NF`, drawerFiltersForCategory(row.category, 'unknown')); }}>{row.unknown || 0}</span> },
+                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#64748b' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Status NF`, drawerFiltersForCategory(row.category, 'unknown')); }}>{row.unknown || 0}</span> },
                   { key: 'unknown_pct', label: 'Status NF %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#64748b', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.unknown_pct?.toFixed(1)}%</span> },
                 ]}
                 maxHeight="300px"
-                onRowClick={(row) => openDrawer(`${row.category} � All Complaints`, drawerFiltersForCategory(row.category))}
+                onRowClick={(row) => openDrawer(`${row.category} � All Complaints`, drawerFiltersForCategory(row.category))}
                 noExpand={true}
                 hideTitleBar={true}
                 onSort={(key, dir) => key ? setCategoryTableSort({ key, dir }) : setCategoryTableSort(null)}

@@ -104,10 +104,12 @@ export const parseCctnsDate = (value: unknown): Date | null => {
 
   const match = text.match(/^(\d{2})[/-](\d{2})[/-](\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
   if (match) {
-    const day = Number(match[1]);
-    const month = Number(match[2]);
-    const year = Number(match[3]);
-    const hour = Number(match[4] || '0');
+    const day    = Number(match[1]);
+    const month  = Number(match[2]);
+    const year   = Number(match[3]);
+    // Reject sentinel/placeholder dates from the government API (e.g. 01/01/1900)
+    if (year < 2000) return null;
+    const hour   = Number(match[4] || '0');
     const minute = Number(match[5] || '0');
     const second = Number(match[6] || '0');
     const parsed = new Date(year, month - 1, day, hour, minute, second);
@@ -115,7 +117,8 @@ export const parseCctnsDate = (value: unknown): Date | null => {
   }
 
   const fallback = new Date(text);
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
+  if (!Number.isNaN(fallback.getTime()) && fallback.getFullYear() >= 2000) return fallback;
+  return null;
 };
 
 export const normalizeComplaintRow = (row: CctnsComplaintRow): NormalizedCctnsComplaint | null => {

@@ -837,9 +837,13 @@ if (disposalAge) {
 
       let fromDate: Date;
       if (lastDate) {
-        // Start from the day AFTER the last recorded date to avoid re-fetching known data
+        // ⚠️ IMPORTANT: Start from the SAME date as the last record, NOT +1 day.
+        // If last record was at 3:02 PM on May 15, starting from May 16 would miss
+        // all records registered on May 15 after 3:02 PM.
+        // We re-fetch the same day — upsert ensures no duplicate rows are created.
         fromDate = new Date(lastDate);
-        fromDate.setDate(fromDate.getDate() + 1);
+        // Truncate to start of day (00:00:00) in local time to fetch the full day
+        fromDate.setHours(0, 0, 0, 0);
       } else {
         // No data at all — default to 30 days ago
         fromDate = new Date();

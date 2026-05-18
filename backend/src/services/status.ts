@@ -4,13 +4,12 @@ export type ComplaintStatusGroup = 'pending' | 'disposed' | 'unknown';
  * Classifies a CCTNS complaint's status into one of three groups.
  *
  * Rules:
- *  1. 'disposed' → statusRaw contains "disposed" OR disposalDate is present
- *  2. 'pending'  → statusRaw contains "pending"
+ *  1. 'disposed' → statusRaw explicitly contains "disposed"
+ *  2. 'pending'  → statusRaw explicitly contains "pending"
  *  3. 'unknown'  → statusRaw is blank/null or any unrecognized value
- *                  These are complaints where the CCTNS API did not provide a valid status.
- *                  We do NOT assume their state — they are recorded as "Unknown Status".
+ *                  We do NOT assume status from the presence of a disposalDate.
  *
- * isDisposedMissingDate = true when status says "disposed" but API provided no disposalDate.
+ * isDisposedMissingDate = true when API says "disposed" but provided no valid disposalDate.
  */
 export const classifyComplaintStatus = (
   statusRaw: string | null | undefined,
@@ -18,11 +17,12 @@ export const classifyComplaintStatus = (
 ): { statusGroup: ComplaintStatusGroup; isDisposedMissingDate: boolean } => {
   const normalized = String(statusRaw || '').toLowerCase().trim();
   const mentionsDisposed = normalized.includes('disposed');
-  const mentionsPending = normalized.includes('pending');
+  const mentionsPending  = normalized.includes('pending');
 
   let statusGroup: ComplaintStatusGroup;
 
-  if (mentionsDisposed || disposalDate) {
+  if (mentionsDisposed) {
+    // Only classify as disposed if the API explicitly says so
     statusGroup = 'disposed';
   } else if (mentionsPending) {
     statusGroup = 'pending';
@@ -33,6 +33,7 @@ export const classifyComplaintStatus = (
 
   return {
     statusGroup,
+    // Missing date: API declared disposed but gave no real disposal date
     isDisposedMissingDate: mentionsDisposed && !disposalDate,
   };
 };

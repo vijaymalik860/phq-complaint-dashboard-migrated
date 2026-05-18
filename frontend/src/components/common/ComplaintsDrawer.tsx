@@ -31,13 +31,14 @@ interface Props {
 const fmtDate = (val: unknown): string => {
   if (!val) return '—';
   const d = new Date(val as string);
-  return isNaN(d.getTime()) ? String(val) : d.toLocaleDateString('en-IN');
+  if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
+  return d.toLocaleDateString('en-IN');
 };
 
 const fmtDateTime = (val: unknown): string => {
   if (!val) return '—';
   const d = new Date(val as string);
-  if (isNaN(d.getTime())) return String(val);
+  if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—';
   return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 

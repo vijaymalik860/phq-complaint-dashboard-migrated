@@ -210,7 +210,10 @@ export const runCctnsFullRollingSync = async (): Promise<void> => {
       label:    `rolling-chunk-${chunkIndex}`,
     });
 
-    chunkStart.setDate(chunkStart.getDate() + CHUNK_DAYS + 1);
+    // Advance to next chunk — use exact CHUNK_DAYS (no +1 gap).
+    // The API date filter is inclusive on both ends, so the last day of this chunk
+    // will be the first day of the next chunk. Upsert handles any duplicates safely.
+    chunkStart.setDate(chunkStart.getDate() + CHUNK_DAYS);
 
     // Small pause between chunks to avoid hammering the CCTNS API
     await new Promise(r => setTimeout(r, 3000));
