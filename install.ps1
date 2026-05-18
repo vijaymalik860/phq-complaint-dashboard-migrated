@@ -138,20 +138,80 @@ if (-not (Find-Cmd "git")) {
 Write-Ok "Git: $(git --version 2>&1)"
 
 # ── STEP 4: PostgreSQL ────────────────────────────────────────────────────────
-Write-Step "4" "Checking PostgreSQL 15"
+Write-Step "4" "Checking PostgreSQL"
 
+# Scan common PostgreSQL install locations (versions 14-17)
+$pgVersions  = @('17', '16', '15', '14')
+$pgFoundPath = $null
+$pgFoundVer  = $null
+
+foreach ($ver in $pgVersions) {
+    $candidate = "C:\Program Files\PostgreSQL\$ver\bin"
+    if (Test-Path (Join-Path $candidate "psql.exe")) {
+        $pgFoundPath = $candidate
+        $pgFoundVer  = $ver
+        break
+    }
+}
+
+# Also check if psql is already in PATH (even if not in standard folders)
 Add-ToPath "C:\Program Files\PostgreSQL\15\bin"
 Refresh-Path
+if ($null -eq $pgFoundPath -and (Find-Cmd "psql")) {
+    $pgFoundPath = (Split-Path (Get-Command psql).Source)
+    $pgFoundVer  = "existing"
+}
 
-if (-not (Find-Cmd "psql")) {
-    Write-Host "    Downloading PostgreSQL 15 (may take a few minutes)..." -ForegroundColor DarkGray
+$doFreshInstall = $false
+
+if ($null -ne $pgFoundPath) {
+    # PostgreSQL already installed — ask user yes/no
+    Write-Host ""
+    Write-Host "  PostgreSQL found at: $pgFoundPath" -ForegroundColor Yellow
+    Write-Host ""
+    $useExisting = Read-Host "  PostgreSQL is already installed. Use existing installation? [Y/n]"
+
+    if ([string]::IsNullOrWhiteSpace($useExisting) -or $useExisting -match '^[Yy]') {
+        # Use existing — collect its password and port
+        Write-Host ""
+        $sec2   = Read-Host "  Enter the existing PostgreSQL 'postgres' user password" -AsSecureString
+        $bstr2  = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec2)
+        $DbPass = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr2)
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr2)
+        if ([string]::IsNullOrWhiteSpace($DbPass)) { $DbPass = "Admin2026" }
+
+        $pgPortInput = Read-Host "  Existing PostgreSQL port? (default: $DbPort)"
+        if (-not [string]::IsNullOrWhiteSpace($pgPortInput)) { $DbPort = $pgPortInput }
+
+        Add-ToPath $pgFoundPath
+        Refresh-Path
+        Write-Ok "Using existing PostgreSQL (v$pgFoundVer) at $pgFoundPath"
+    } else {
+        # User said No — warn and ask for confirmation before reinstall
+        Write-Host ""
+        Write-Host "  WARNING: Installing PostgreSQL 15 on top of an existing installation" -ForegroundColor Yellow
+        Write-Host "  may fail. Consider uninstalling the old version first." -ForegroundColor Yellow
+        Write-Host ""
+        $confirm = Read-Host "  Continue with fresh install anyway? [y/N]"
+        if ($confirm -match '^[Yy]') {
+            $doFreshInstall = $true
+        } else {
+            Write-Fail "Installation cancelled. Uninstall existing PostgreSQL and re-run install.bat."
+        }
+    }
+} else {
+    $doFreshInstall = $true
+}
+
+if ($doFreshInstall) {
+    Write-Host "    PostgreSQL not found. Downloading PostgreSQL 15..." -ForegroundColor DarkGray
     $pgExe = "$env:TEMP\postgres-installer.exe"
     try {
         (New-Object System.Net.WebClient).DownloadFile(
             "https://get.enterprisedb.com/postgresql/postgresql-15.6-1-windows-x64.exe", $pgExe)
     } catch { Write-Fail "Could not download PostgreSQL. Check internet connection." }
 
-    Write-Host "    Installing PostgreSQL (unattended, 3-5 min)..." -ForegroundColor DarkGray
+    Write-Host "    Installing PostgreSQL 15 (unattended, 3-5 min)..." -ForegroundColor DarkGray
     $pgArgs = "--mode unattended --unattendedmodeui none " +
               "--superpassword `"$DbPass`" " +
               "--servicename postgresql-x64-15 " +
@@ -166,8 +226,8 @@ if (-not (Find-Cmd "psql")) {
     if (-not (Find-Cmd "psql")) {
         Write-Fail "PostgreSQL installed but psql not in PATH. Reboot and re-run install.bat."
     }
+    Write-Ok "PostgreSQL 15 installed successfully."
 }
-Write-Ok "PostgreSQL ready."
 
 # ── STEP 5: Clone Repository ──────────────────────────────────────────────────
 Write-Step "5" "Setting up repository at $InstallDir"
