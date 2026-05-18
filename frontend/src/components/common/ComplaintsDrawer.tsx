@@ -261,18 +261,18 @@ export const ComplaintsDrawer = ({ open, title, filters, onClose }: Props) => {
               {filters.psName         && <span className="drawer-badge ps">{filters.psName}</span>}
               {filters.classOfIncident && <span className="drawer-badge cat">{filters.classOfIncident}</span>}
               {filters.pendencyAge    && <span className="drawer-badge age">Age: {
-                filters.pendencyAge === 'u7' ? '<7 Days'
-                : filters.pendencyAge === 'u15' ? '7-15 Days'
-                : filters.pendencyAge === 'u30' ? '15-30 Days'
-                : filters.pendencyAge === 'o30' ? '1-2 Months'
+                filters.pendencyAge === 'u7' ? 'Within 7 Days'
+                : filters.pendencyAge === 'u15' ? 'Within 15 Days'
+                : filters.pendencyAge === 'u30' ? 'Within 30 Days'
+                : filters.pendencyAge === 'o30' ? 'Within 2 Months'
                 : filters.pendencyAge === 'o60' ? 'Over 2 Months'
                 : filters.pendencyAge
               }</span>}
               {filters.disposalAge    && <span className="drawer-badge age">Disp Age: {
-                filters.disposalAge === 'u7' ? '<7 Days'
-                : filters.disposalAge === 'u15' ? '7-15 Days'
-                : filters.disposalAge === 'u30' ? '15-30 Days'
-                : filters.disposalAge === 'o30' ? '1-2 Months'
+                filters.disposalAge === 'u7' ? 'Within 7 Days'
+                : filters.disposalAge === 'u15' ? 'Within 15 Days'
+                : filters.disposalAge === 'u30' ? 'Within 30 Days'
+                : filters.disposalAge === 'o30' ? 'Within 2 Months'
                 : filters.disposalAge === 'o60' ? 'Over 2 Months'
                 : filters.disposalAge
               }</span>}

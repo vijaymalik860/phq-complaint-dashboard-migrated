@@ -1007,14 +1007,14 @@ export const CCTNSPage = () => {
                       effFromDate && `From: ${effFromDate}`,
                       effToDate && `To: ${effToDate}`,
                       urlPendencyAge && (urlPendencyAge === 'u7' ? 'Pendency: < 7 Days' :
-                        urlPendencyAge === 'u15' ? 'Pendency: 7 - 15 Days' :
-                          urlPendencyAge === 'u30' ? 'Pendency: 15 - 30 Days' :
-                            urlPendencyAge === 'o30' ? 'Pendency: 1 - 2 Months' :
+                        urlPendencyAge === 'u15' ? 'Pendency: Within 15 Days' :
+                          urlPendencyAge === 'u30' ? 'Pendency: Within 30 Days' :
+                            urlPendencyAge === 'o30' ? 'Pendency: Within 2 Months' :
                               urlPendencyAge === 'o60' ? 'Pendency: Over 2 Months' : `Pendency: ${urlPendencyAge}`),
                       urlDisposalAge && (urlDisposalAge === 'u7' ? 'Disposal: < 7 Days' :
-                        urlDisposalAge === 'u15' ? 'Disposal: 7 - 15 Days' :
-                          urlDisposalAge === 'u30' ? 'Disposal: 15 - 30 Days' :
-                            urlDisposalAge === 'o30' ? 'Disposal: 1 - 2 Months' :
+                        urlDisposalAge === 'u15' ? 'Disposal: Within 15 Days' :
+                          urlDisposalAge === 'u30' ? 'Disposal: Within 30 Days' :
+                            urlDisposalAge === 'o30' ? 'Disposal: Within 2 Months' :
                               urlDisposalAge === 'o60' ? 'Disposal: Over 2 Months' : `Disposal: ${urlDisposalAge}`),
                       urlUnmappedPs && 'Unmapped PS',
                     ].filter(Boolean).join(' | ')}

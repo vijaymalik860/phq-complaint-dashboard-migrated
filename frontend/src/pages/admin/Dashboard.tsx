@@ -387,10 +387,10 @@ export const DashboardPage = () => {
   const matrixCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'u7', label: '<7 Days', sortable: true, align: 'center' },
-    { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
-    { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
-    { key: 'o30', label: '1-2 Months', sortable: true, align: 'center' },
+    { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
+    { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
+    { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
+    { key: 'o30', label: 'Within 2 Months', sortable: true, align: 'center' },
     { key: 'o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -417,10 +417,10 @@ export const DashboardPage = () => {
   const matrixPctCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'pct_u7', label: '<7 Days', sortable: true, align: 'center' },
-    { key: 'pct_u15', label: '7-15 Days', sortable: true, align: 'center' },
-    { key: 'pct_u30', label: '15-30 Days', sortable: true, align: 'center' },
-    { key: 'pct_o30', label: '1-2 Months', sortable: true, align: 'center' },
+    { key: 'pct_u7', label: 'Within 7 Days', sortable: true, align: 'center' },
+    { key: 'pct_u15', label: 'Within 15 Days', sortable: true, align: 'center' },
+    { key: 'pct_u30', label: 'Within 30 Days', sortable: true, align: 'center' },
+    { key: 'pct_o30', label: 'Within 2 Months', sortable: true, align: 'center' },
     { key: 'pct_o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -464,10 +464,10 @@ export const DashboardPage = () => {
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'With Date', sortable: true, align: 'center' },
     { key: 'missingDates', label: 'Date Not Found', sortable: true, align: 'center' },
-    { key: 'u7', label: '<7 Days', sortable: true, align: 'center' },
-    { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
-    { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
-    { key: 'o30', label: '1-2 Months', sortable: true, align: 'center' },
+    { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
+    { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
+    { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
+    { key: 'o30', label: 'Within 2 Months', sortable: true, align: 'center' },
     { key: 'o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -487,10 +487,10 @@ export const DashboardPage = () => {
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'With Date', sortable: true, align: 'center' },
     { key: 'pct_missing', label: 'Date Not Found', sortable: true, align: 'center' },
-    { key: 'pct_u7', label: '<7 Days', sortable: true, align: 'center' },
-    { key: 'pct_u15', label: '7-15 Days', sortable: true, align: 'center' },
-    { key: 'pct_u30', label: '15-30 Days', sortable: true, align: 'center' },
-    { key: 'pct_o30', label: '1-2 Months', sortable: true, align: 'center' },
+    { key: 'pct_u7', label: 'Within 7 Days', sortable: true, align: 'center' },
+    { key: 'pct_u15', label: 'Within 15 Days', sortable: true, align: 'center' },
+    { key: 'pct_u30', label: 'Within 30 Days', sortable: true, align: 'center' },
+    { key: 'pct_o30', label: 'Within 2 Months', sortable: true, align: 'center' },
     { key: 'pct_o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -634,9 +634,9 @@ export const DashboardPage = () => {
                 // Sheet 5: Pendency Ageing Matrix
                 const matrixSummary = matrix.map((d: any) => ({
                   'District': d.district,
-                  '< 7 Days (Pending)': d.u7,
-                  '7 - 15 Days (Pending)': d.u15,
-                  '15 - 30 Days (Pending)': d.u30,
+                  'Within 7 Days (Pending)': d.u7,
+                  'Within 15 Days (Pending)': d.u15,
+                  'Within 30 Days (Pending)': d.u30,
                   '> 30 Days (Pending)': d.o30
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matrixSummary), 'Pendency Ageing Matrix');
@@ -646,10 +646,10 @@ export const DashboardPage = () => {
                   'District': d.district,
                   'With Date': d.total || 0,
                   'Date Not Found': d.missingDates || 0,
-                  '< 7 Days': d.u7,
-                  '7-15 Days': d.u15,
-                  '15-30 Days': d.u30,
-                  '1-2 Months': d.o30,
+                  'Within 7 Days': d.u7,
+                  'Within 15 Days': d.u15,
+                  'Within 30 Days': d.u30,
+                  'Within 2 Months': d.o30,
                   'Over 2 Months': d.o60,
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dispMatrix), 'Disposal Time Matrix');
