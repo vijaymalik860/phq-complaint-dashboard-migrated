@@ -257,13 +257,27 @@ if ($doFreshInstall) {
 Write-Step "5" "Setting up repository at $InstallDir"
 
 if (Test-Path $InstallDir) {
-    Write-Host "    Directory exists. Pulling latest $Branch..." -ForegroundColor DarkGray
+    # Check if the directory is actually a git repo
     Set-Location $InstallDir
-    git restore . 2>&1 | Out-Null
-    git fetch origin 2>&1 | Out-Null
-    git checkout $Branch 2>&1 | Out-Null
-    git pull origin $Branch 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Fail "git pull failed. Check internet or repo access." }
+    $ErrorActionPreference = "Continue"
+    git rev-parse --git-dir 2>&1 | Out-Null
+    $isGitRepo = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = "Stop"
+
+    if ($isGitRepo) {
+        Write-Host "    Git repo found. Pulling latest $Branch..." -ForegroundColor DarkGray
+        git restore . 2>&1 | Out-Null
+        git fetch origin 2>&1 | Out-Null
+        git checkout $Branch 2>&1 | Out-Null
+        git pull origin $Branch 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { Write-Fail "git pull failed. Check internet or repo access." }
+    } else {
+        Write-Host "    Folder exists but is not a git repo. Removing and cloning fresh..." -ForegroundColor Yellow
+        Set-Location "C:\"
+        Remove-Item -Recurse -Force $InstallDir
+        git clone -b $Branch $RepoUrl $InstallDir
+        if ($LASTEXITCODE -ne 0) { Write-Fail "git clone failed. Check internet or repo access." }
+    }
 } else {
     Set-Location "C:\"
     Write-Host "    Cloning repository..." -ForegroundColor DarkGray
