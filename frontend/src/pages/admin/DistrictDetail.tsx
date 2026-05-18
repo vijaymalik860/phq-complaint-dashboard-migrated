@@ -165,10 +165,10 @@ export const DistrictDetail = () => {
     { key: 'missingDates', label: 'Disposed but Date Not Found', sortable: true, align: 'center' },
     { key: 'pending', label: 'Pending', sortable: true, align: 'center' },
     { key: 'unknown', label: 'Status Not Found', sortable: true, align: 'center' },
-    { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
-    { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
-    { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
-    { key: 'o30', label: 'Within 2 Months', sortable: true, align: 'center' },
+    { key: 'u7', label: '< 7 Days', sortable: true, align: 'center' },
+    { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
+    { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
+    { key: 'o30', label: '1-2 Months', sortable: true, align: 'center' },
     { key: 'o60', label: 'Over 2 Months', sortable: true, align: 'center' },
     { key: 'avgDisposalDays', label: 'Avg. Disposal (Days)', sortable: true, align: 'center' },
   ];
@@ -232,10 +232,10 @@ export const DistrictDetail = () => {
   const pendencyCols: Column<any>[] = [
     { key: 'ps', label: 'Police Station', sortable: true },
     { key: 'pending', label: 'Total', sortable: true, align: 'center' },
-    { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
-    { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
-    { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
-    { key: 'o30', label: 'Within 2 Months', sortable: true, align: 'center' },
+    { key: 'u7', label: '< 7 Days', sortable: true, align: 'center' },
+    { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
+    { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
+    { key: 'o30', label: '1-2 Months', sortable: true, align: 'center' },
     { key: 'o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -388,9 +388,9 @@ export const DistrictDetail = () => {
                   'Disposed %': `${Math.round((ps.disposed / (ps.total || 1)) * 100)}%`,
                   'Pending %': `${Math.round((ps.pending / (ps.total || 1)) * 100)}%`,
                   'Status Not Found %': `${Math.round(((ps.unknown || 0) / (ps.total || 1)) * 100)}%`,
-                  'Within 7 Days (Pending)': ps.u7,
-                  'Within 15 Days (Pending)': ps.u15,
-                  'Within 30 Days (Pending)': ps.u30,
+                  '< 7 Days (Pending)': ps.u7,
+                  '7 - 15 Days (Pending)': ps.u15,
+                  '15 - 30 Days (Pending)': ps.u30,
                   '> 30 Days (Pending)': ps.o30,
                   'Avg Disposal (Days)': ps.avgDisposalDays
                 }));

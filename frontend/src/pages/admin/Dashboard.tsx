@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
@@ -387,10 +387,10 @@ export const DashboardPage = () => {
   const matrixCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
-    { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
-    { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
-    { key: 'o30', label: 'Within 2 Months', sortable: true, align: 'center' },
+    { key: 'u7', label: '<7 Days', sortable: true, align: 'center' },
+    { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
+    { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
+    { key: 'o30', label: '1-2 Months', sortable: true, align: 'center' },
     { key: 'o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -406,10 +406,10 @@ export const DashboardPage = () => {
   const renderMatrixDays = (col: any, row: any) => {
     if (col.key === 'district') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total') return mkCell(row.total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
-    if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
-    if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending Within 30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
-    if (col.key === 'o30') return mkCell(row.o30, '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending Within 2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
+    if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
+    if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
+    if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
+    if (col.key === 'o30') return mkCell(row.o30, '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending 1-2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
     if (col.key === 'o60') return mkCell(row.o60 || 0, '#b91c1c',    'bold',    row.district ? () => openDrawer(`${row.district} — Pending Over 2 Months`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -417,10 +417,10 @@ export const DashboardPage = () => {
   const matrixPctCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'pct_u7', label: 'Within 7 Days', sortable: true, align: 'center' },
-    { key: 'pct_u15', label: 'Within 15 Days', sortable: true, align: 'center' },
-    { key: 'pct_u30', label: 'Within 30 Days', sortable: true, align: 'center' },
-    { key: 'pct_o30', label: 'Within 2 Months', sortable: true, align: 'center' },
+    { key: 'pct_u7', label: '<7 Days', sortable: true, align: 'center' },
+    { key: 'pct_u15', label: '7-15 Days', sortable: true, align: 'center' },
+    { key: 'pct_u30', label: '15-30 Days', sortable: true, align: 'center' },
+    { key: 'pct_o30', label: '1-2 Months', sortable: true, align: 'center' },
     { key: 'pct_o60', label: 'Over 2 Months', sortable: true, align: 'center' },
   ];
 
@@ -435,10 +435,10 @@ export const DashboardPage = () => {
     );
     if (col.key === 'district')  return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total') return mkPct(row.pct_total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
-    if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending Within 15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
-    if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending Within 30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
-    if (col.key === 'pct_o30')  return mkPct(row.pct_o30,  '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending Within 2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
+    if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
+    if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
+    if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
+    if (col.key === 'pct_o30')  return mkPct(row.pct_o30,  '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending 1-2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
     if (col.key === 'pct_o60')  return mkPct(row.pct_o60 || 0, '#b91c1c',      'bold',    row.district ? () => openDrawer(`${row.district} — Pending Over 2 Months`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o60' })) : undefined);
     return row[col.key];
   };
@@ -634,9 +634,9 @@ export const DashboardPage = () => {
                 // Sheet 5: Pendency Ageing Matrix
                 const matrixSummary = matrix.map((d: any) => ({
                   'District': d.district,
-                  'Within 7 Days (Pending)': d.u7,
-                  'Within 15 Days (Pending)': d.u15,
-                  'Within 30 Days (Pending)': d.u30,
+                  '< 7 Days (Pending)': d.u7,
+                  '7 - 15 Days (Pending)': d.u15,
+                  '15 - 30 Days (Pending)': d.u30,
                   '> 30 Days (Pending)': d.o30
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matrixSummary), 'Pendency Ageing Matrix');
