@@ -166,8 +166,8 @@ Write-Ok "Git: $(git --version 2>&1)"
 # ── STEP 4: PostgreSQL ────────────────────────────────────────────────────────
 Write-Step "4" "Checking PostgreSQL"
 
-# Scan all common PostgreSQL install paths (PG 14-17)
-$pgVersions  = @('17', '16', '15', '14')
+# Scan all common PostgreSQL install paths (PG 14-18)
+$pgVersions  = @('18', '17', '16', '15', '14')
 $pgFoundPath = $null
 $pgFoundVer  = $null
 
