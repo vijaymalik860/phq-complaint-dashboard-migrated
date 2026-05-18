@@ -528,13 +528,44 @@ export const reportRoutes = async (fastify: FastifyInstance) => {
         COALESCE("firstName",'') || ' ' || COALESCE("lastName",'') ILIKE ${pat}
         OR COALESCE(mobile,'') ILIKE ${pat}
         OR COALESCE("complRegNum",'') ILIKE ${pat}
+        OR COALESCE("districtName",'') ILIKE ${pat}
+        OR COALESCE("addressPs",'') ILIKE ${pat}
       )`;
     }
+
+    // ── Query builder filters (from frontend filter chips) ────────
+    const qfParts: Prisma.Sql[] = [];
+    try {
+      const qfRaw = String(query.queryFilters || '').trim();
+      if (qfRaw) {
+        const qfs: { field: string; op: string; value: string }[] = JSON.parse(qfRaw);
+        const fieldMap: Record<string, string> = {
+          complaintNumber: '"complRegNum"',
+          name:  'COALESCE("firstName",\'\') || \' \' || COALESCE("lastName\",\'\')',
+          mobile: 'mobile',
+          district: 'COALESCE("districtName","addressDistrict",\'\')',
+          ps:    'COALESCE("addressPs",\'\')',
+          address: 'COALESCE("addressLine1","addressLine2","addressLine3",\'\')',
+          gender: 'gender',
+        };
+        for (const { field, op, value } of qfs) {
+          const col = fieldMap[field];
+          if (!col || !value) continue;
+          const colSql = Prisma.raw(col);
+          if (op === 'equals')      qfParts.push(Prisma.sql`${colSql} ILIKE ${value}`);
+          else if (op === 'starts_with') qfParts.push(Prisma.sql`${colSql} ILIKE ${value + '%'}`);
+          else                           qfParts.push(Prisma.sql`${colSql} ILIKE ${'%' + value + '%'}`);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+
+    const qfSql = qfParts.length > 0 ? Prisma.join(qfParts, ' AND ') : Prisma.sql`TRUE`;
 
     const whereClause = Prisma.sql`${filterWhere} 
       AND "receptionMode" = 'In-Person/By Hand' 
       AND ${INVALID_MOBILE_EXPR}
-      AND ${searchWhere}`;
+      AND ${searchWhere}
+      AND ${qfSql}`;
 
     const countRows = await prisma.$queryRaw<any[]>`
       SELECT COUNT(*) AS total FROM "Complaint" WHERE ${whereClause}
@@ -542,12 +573,55 @@ export const reportRoutes = async (fastify: FastifyInstance) => {
 
     const rows = await prisma.$queryRaw<any[]>`
       SELECT
-        "complRegNum" AS "complaintNumber", 
-        "complRegDt" AS "date", 
-        "firstName", "lastName", mobile, 
-        "districtName", "addressDistrict", 
-        "policeStationName", "addressPs",
-        "status"
+        "complRegNum",
+        "complRegDt",
+        "complSrno",
+        "firstName",
+        "lastName",
+        "gender",
+        "age",
+        mobile,
+        "email",
+        "complainantType",
+        "addressLine1",
+        "addressLine2",
+        "addressLine3",
+        "village",
+        "tehsil",
+        "addressDistrict",
+        "addressPs",
+        "districtName",
+        "districtMasterId",
+        "policeStationMasterId",
+        "officeMasterId",
+        "submitPsCd",
+        "submitOfficeCd",
+        "receptionMode",
+        "branch",
+        "complDesc",
+        "complaintSource",
+        "typeOfComplaint",
+        "complaintPurpose",
+        "classOfIncident",
+        "incidentType",
+        "incidentPlc",
+        "incidentFromDt",
+        "incidentToDt",
+        "crimeCategory",
+        "respondentCategories",
+        "statusOfComplaint",
+        "statusRaw",
+        "statusGroup",
+        "disposalDate",
+        "isDisposedMissingDate",
+        "transferDistrictCd",
+        "transferOfficeCd",
+        "transferPsCd",
+        "firNumber",
+        "actionTaken",
+        "ioDetails",
+        "createdAt",
+        "updatedAt"
       FROM "Complaint"
       WHERE ${whereClause}
       ORDER BY "complRegDt" DESC NULLS LAST
@@ -555,13 +629,55 @@ export const reportRoutes = async (fastify: FastifyInstance) => {
     `;
 
     const items = rows.map(r => ({
-      complaintNumber: r.complaintNumber,
-      date: r.date ? String(r.date).split('T')[0] : null,
-      fullName: [r.firstName, r.lastName].filter(Boolean).join(' ') || 'N/A',
-      mobile: r.mobile,
-      district: r.districtName || r.addressDistrict || 'N/A',
-      ps: r.policeStationName || r.addressPs || 'N/A',
-      status: r.status,
+      complRegNum:           r.complRegNum,
+      complRegDt:            r.complRegDt,
+      complSrno:             r.complSrno,
+      firstName:             r.firstName,
+      lastName:              r.lastName,
+      gender:                r.gender,
+      age:                   r.age,
+      mobile:                r.mobile,
+      email:                 r.email,
+      complainantType:       r.complainantType,
+      addressLine1:          r.addressLine1,
+      addressLine2:          r.addressLine2,
+      addressLine3:          r.addressLine3,
+      village:               r.village,
+      tehsil:                r.tehsil,
+      addressDistrict:       r.addressDistrict,
+      addressPs:             r.addressPs,
+      districtName:          r.districtName,
+      districtMasterId:      r.districtMasterId?.toString() ?? null,
+      policeStationMasterId: r.policeStationMasterId?.toString() ?? null,
+      officeMasterId:        r.officeMasterId?.toString() ?? null,
+      submitPsCd:            r.submitPsCd,
+      submitOfficeCd:        r.submitOfficeCd,
+      receptionMode:         r.receptionMode,
+      branch:                r.branch,
+      complDesc:             r.complDesc,
+      complaintSource:       r.complaintSource,
+      typeOfComplaint:       r.typeOfComplaint,
+      complaintPurpose:      r.complaintPurpose,
+      classOfIncident:       r.classOfIncident,
+      incidentType:          r.incidentType,
+      incidentPlc:           r.incidentPlc,
+      incidentFromDt:        r.incidentFromDt,
+      incidentToDt:          r.incidentToDt,
+      crimeCategory:         r.crimeCategory,
+      respondentCategories:  r.respondentCategories,
+      statusOfComplaint:     r.statusOfComplaint,
+      statusRaw:             r.statusRaw,
+      statusGroup:           r.statusGroup,
+      disposalDate:          r.disposalDate,
+      isDisposedMissingDate: r.isDisposedMissingDate,
+      transferDistrictCd:    r.transferDistrictCd,
+      transferOfficeCd:      r.transferOfficeCd,
+      transferPsCd:          r.transferPsCd,
+      firNumber:             r.firNumber,
+      actionTaken:           r.actionTaken,
+      ioDetails:             r.ioDetails,
+      createdAt:             r.createdAt,
+      updatedAt:             r.updatedAt,
     }));
 
     const total = Number(countRows[0]?.total || 0);
