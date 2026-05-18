@@ -797,17 +797,30 @@ if (disposalAge) {
   });
 
 
-  // ── NEW: return the most recent complaint registration date in the DB ──
-  // Used by the frontend "Quick Sync" button to find the from-date automatically.
+  // ── Return the date of the most recent successful sync run ──
+  // Used by the frontend "Quick Sync" button label AND as the from-date for the next sync.
+  // We use the last SyncRun startedAt (when we last pulled data) rather than MAX(complRegDt)
+  // so the label matches the "Last updated" footer and feels intuitive to the user.
   fastify.get('/cctns/last-sync-date', {
     preHandler: [authenticate],
   }, async (_request, reply) => {
     try {
+      // 1. Find the most recent successful (or partial) sync run
+      const lastRun = await prisma.syncRun.findFirst({
+        where: { status: { in: ['success', 'partial'] } },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true },
+      });
+
+      // 2. Also get MAX(complRegDt) as the fallback if no SyncRun exists
       const result = await prisma.$queryRaw<{ last_date: Date | null }[]>`
         SELECT MAX("complRegDt") AS last_date FROM "Complaint"
       `;
-      const lastDate = result[0]?.last_date || null;
-      // Format as DD/MM/YYYY for the CCTNS API, and ISO for the frontend date picker
+      const maxRegDt = result[0]?.last_date || null;
+
+      // Use the last sync run date if available, otherwise fall back to max complRegDt
+      const lastDate: Date | null = lastRun?.startedAt ?? maxRegDt;
+
       let apiDate: string | null = null;
       let isoDate: string | null = null;
       if (lastDate) {
@@ -818,45 +831,58 @@ if (disposalAge) {
         apiDate = `${dd}/${mm}/${yyyy}`;
         isoDate = `${yyyy}-${mm}-${dd}`;
       }
-      return sendSuccess(reply, { lastDate: lastDate ? lastDate.toISOString() : null, apiDate, isoDate });
+      return sendSuccess(reply, {
+        lastDate: lastDate ? lastDate.toISOString() : null,
+        apiDate,
+        isoDate,
+        // Also expose the raw max complRegDt for debugging
+        maxComplRegDt: maxRegDt ? maxRegDt.toISOString() : null,
+      });
     } catch (error: any) {
       return sendError(reply, `Failed to get last sync date: ${error.message}`);
     }
   });
 
-  // ── NEW: Quick Sync — fetch from last DB date → today ──
+  // ── Quick Sync — fetch from last successful sync date → today ──
   fastify.post('/cctns/quick-sync', {
     preHandler: [authenticate],
   }, async (_request, reply) => {
     try {
-      // Find the most recent complRegDt in DB
+      // 1. Try to use last successful SyncRun date as the from-date.
+      //    This matches what the Quick Sync button label shows the user.
+      const lastRun = await prisma.syncRun.findFirst({
+        where: { status: { in: ['success', 'partial'] } },
+        orderBy: { startedAt: 'desc' },
+        select: { startedAt: true },
+      });
+
+      // 2. Fallback: use MAX(complRegDt) if no sync history exists
       const result = await prisma.$queryRaw<{ last_date: Date | null }[]>`
         SELECT MAX("complRegDt") AS last_date FROM "Complaint"
       `;
-      const lastDate = result[0]?.last_date;
+      const maxRegDt = result[0]?.last_date;
 
       let fromDate: Date;
-      if (lastDate) {
-        // ⚠️ IMPORTANT: Start from the SAME date as the last record, NOT +1 day.
-        // If last record was at 3:02 PM on May 15, starting from May 16 would miss
-        // all records registered on May 15 after 3:02 PM.
-        // We re-fetch the same day — upsert ensures no duplicate rows are created.
-        fromDate = new Date(lastDate);
-        // Truncate to start of day (00:00:00) in local time to fetch the full day
+      if (lastRun?.startedAt) {
+        // Start from the beginning of the day of the last sync run.
+        // This ensures we catch any complaints registered that day after the sync ran.
+        fromDate = new Date(lastRun.startedAt);
+        fromDate.setHours(0, 0, 0, 0);
+      } else if (maxRegDt) {
+        // No sync history — start from the max complRegDt day (truncated to midnight)
+        fromDate = new Date(maxRegDt);
         fromDate.setHours(0, 0, 0, 0);
       } else {
-        // No data at all — default to 30 days ago
+        // Completely empty DB — default to 30 days ago
         fromDate = new Date();
         fromDate.setDate(fromDate.getDate() - 30);
       }
 
       const today = new Date();
-      // If from > today, nothing to do
       if (fromDate > today) {
         return sendSuccess(reply, {
           skipped: true,
           message: 'Database already up to date. No new dates to fetch.',
-          lastDate: lastDate ? lastDate.toISOString() : null,
         });
       }
 
@@ -879,7 +905,6 @@ if (disposalAge) {
       };
       fetchJobs.set(jobId, job);
 
-      // Fire async — do NOT await
       runFetchJob(jobId, timeFrom, timeTo).catch((err) => {
         console.error(`[QUICK-SYNC ${jobId}] Unhandled error:`, err);
         const j = fetchJobs.get(jobId);
