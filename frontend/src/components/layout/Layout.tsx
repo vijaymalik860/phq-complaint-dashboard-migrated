@@ -64,7 +64,7 @@ export const Layout = ({ children }: LayoutProps) => {
           <div className="header-brand">
             <img src="/PHQlogo.png" alt="PHQ" className="header-logo" />
             <div className="header-text">
-              <span className="header-title">Complaint Monitoring System</span>
+              <span className="header-title">Grievance Monitoring System</span>
               <span className="header-dept">Haryana Police Headquarters</span>
             </div>
           </div>
