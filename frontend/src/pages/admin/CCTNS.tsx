@@ -547,6 +547,24 @@ export const CCTNSPage = () => {
     },
     { key: 'kind', label: 'Type', sortable: true },
     {
+      key: 'syncType',
+      label: 'Mode',
+      render: (row) => (
+        <span style={{ fontWeight: 500 }}>
+          {row.syncType === 'F' ? 'Full (F)' : row.syncType === 'P' ? 'Partial (P)' : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'syncRange',
+      label: 'Sync Range',
+      render: (row) => (
+        <span style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+          {row.timeFrom && row.timeTo ? `${row.timeFrom} - ${row.timeTo}` : '—'}
+        </span>
+      ),
+    },
+    {
       key: 'status',
       label: 'Status',
       sortable: true,

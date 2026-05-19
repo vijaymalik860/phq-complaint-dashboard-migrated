@@ -125,6 +125,9 @@ model SyncRun {
   upsertedCount Int     @default(0)
   errorCount   Int      @default(0)
   message      String?
+  timeFrom     String?
+  timeTo       String?
+  syncType     String?
   createdAt    DateTime @default(now())
 
   @@index([kind])

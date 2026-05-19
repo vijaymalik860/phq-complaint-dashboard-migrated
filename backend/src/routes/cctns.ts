@@ -254,6 +254,9 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
           fetchedCount: complaints.length,
           upsertedCount: created + updated,
           errorCount: errors,
+          timeFrom: timeFrom,
+          timeTo: timeTo,
+          syncType: dType,
           message: `Manual fetch: ${timeFrom} to ${timeTo}`,
         },
       });
@@ -278,6 +281,9 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
           startedAt: job.startedAt,
           endedAt: job.completedAt,
           errorCount: 1,
+          timeFrom: timeFrom,
+          timeTo: timeTo,
+          syncType: dType,
           message: `Manual fetch failed: ${timeFrom} to ${timeTo} — ${errorMsg}`,
         },
       });
