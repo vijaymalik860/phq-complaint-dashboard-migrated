@@ -91,8 +91,8 @@ export async function getCctnsToken(): Promise<string> {
   return tokenStr;
 }
 
-export async function fetchCctnsComplaints(timeFrom: string, timeTo: string): Promise<Record<string, unknown>[]> {
-  console.log(`[CCTNS] Fetching complaints: ${timeFrom} to ${timeTo}`);
+export async function fetchCctnsComplaints(timeFrom: string, timeTo: string, dType: 'P' | 'F' = 'P'): Promise<Record<string, unknown>[]> {
+  console.log(`[CCTNS] Fetching complaints: ${timeFrom} to ${timeTo} (DType: ${dType})`);
   
   const token = await getCctnsToken();
   const apiUrl = process.env.CCTNS_COMPLAINT_API;
@@ -102,7 +102,7 @@ export async function fetchCctnsComplaints(timeFrom: string, timeTo: string): Pr
     throw new Error('CCTNS_COMPLAINT_API or CCTNS_DECRYPT_KEY not configured');
   }
 
-  const url = `${apiUrl}?TimeFrom=${timeFrom}&TimeTo=${timeTo}`;
+  const url = `${apiUrl}?TimeFrom=${timeFrom}&TimeTo=${timeTo}&DType=${dType}`;
   console.log(`[CCTNS] Request URL: ${url}`);
   
   const res = await fetch(url, {

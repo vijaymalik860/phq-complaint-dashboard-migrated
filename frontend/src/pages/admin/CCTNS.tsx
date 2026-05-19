@@ -85,6 +85,7 @@ export const CCTNSPage = () => {
   // Date range state in ISO format for native browser date picker
   const [timeFrom, setTimeFrom] = useState(thirtyDaysAgoIsoStr());
   const [timeTo, setTimeTo] = useState(todayIsoStr());
+  const [dType, setDType] = useState<'P' | 'F'>('P');
 
   // Sync job state (persist in localStorage so navigation doesn't kill it)
   const [activeJobId, setActiveJobId] = useState<string | null>(() => localStorage.getItem('cctnsActiveJobId'));
@@ -121,8 +122,8 @@ export const CCTNSPage = () => {
 
   // ── Fetch & Sync mutation ──
   const fetchMutation = useMutation({
-    mutationFn: (range: { from: string; to: string }) =>
-      cctnsApi.fetchAndSync(range.from, range.to),
+    mutationFn: (range: { from: string; to: string; dType: 'P'|'F' }) =>
+      cctnsApi.fetchAndSync(range.from, range.to, range.dType),
     onSuccess: (data) => {
       if (data?.data?.jobId) {
         setActiveJobId(data.data.jobId);
@@ -632,7 +633,7 @@ export const CCTNSPage = () => {
 
     setFetchError(null);
     setActiveTab('live');
-    fetchMutation.mutate({ from, to });
+    fetchMutation.mutate({ from, to, dType });
   };
 
   // Handle mutation errors
@@ -850,6 +851,20 @@ export const CCTNSPage = () => {
                     className="form-input"
                     style={{ width: 160 }}
                   />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
+                    Type:
+                  </label>
+                  <select
+                    value={dType}
+                    onChange={(e) => setDType(e.target.value as 'P' | 'F')}
+                    className="form-input"
+                    style={{ width: 140 }}
+                  >
+                    <option value="P">Partial (P)</option>
+                    <option value="F">Full / Fresh (F)</option>
+                  </select>
                 </div>
               </div>
 

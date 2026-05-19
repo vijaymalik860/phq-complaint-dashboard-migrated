@@ -60,7 +60,7 @@ const formatDdMmYyyy = (date: Date): string => {
   return `${dd}/${mm}/${yyyy}`;
 };
 
-const collectComplaintsByRange = async (timeFrom: string, timeTo: string, onProgress?: (pct: number) => void) => {
+const collectComplaintsByRange = async (timeFrom: string, timeTo: string, dType: 'P' | 'F' = 'P', onProgress?: (pct: number) => void) => {
   const start = parseDdMmYyyy(timeFrom);
   const end = parseDdMmYyyy(timeTo);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
@@ -83,7 +83,8 @@ const collectComplaintsByRange = async (timeFrom: string, timeTo: string, onProg
 
     const chunkRows = await fetchCctnsComplaints(
       formatDdMmYyyy(chunkStart),
-      formatDdMmYyyy(chunkEnd)
+      formatDdMmYyyy(chunkEnd),
+      dType
     );
     rows.push(...(chunkRows as CctnsComplaintRow[]));
 
@@ -183,7 +184,7 @@ interface FetchJob {
 
 const fetchJobs = new Map<string, FetchJob>();
 
-const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string) => {
+const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dType: 'P' | 'F' = 'P') => {
   const job = fetchJobs.get(jobId);
   if (!job) return;
 
@@ -205,7 +206,7 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string) => {
     
     let complaints: CctnsComplaintRow[] = [];
     try {
-      complaints = await collectComplaintsByRange(timeFrom, timeTo, (pct) => {
+      complaints = await collectComplaintsByRange(timeFrom, timeTo, dType, (pct) => {
         job.progressPercentage = pct;
         job.progress = `Fetching from CCTNS API... (${pct}%)`;
       });
@@ -587,12 +588,12 @@ if (disposalAge) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     try {
-      const { timeFrom, timeTo } = request.query as Record<string, string>;
+      const { timeFrom, timeTo, dType } = request.query as Record<string, string>;
       if (!timeFrom || !timeTo) {
         return sendError(reply, 'timeFrom and timeTo query params are required (format: DD/MM/YYYY)');
       }
 
-      const complaints = await fetchCctnsComplaints(timeFrom, timeTo);
+      const complaints = await fetchCctnsComplaints(timeFrom, timeTo, (dType as 'P'|'F') || 'P');
       return sendSuccess(reply, {
         total: complaints.length,
         timeFrom,
@@ -614,7 +615,7 @@ if (disposalAge) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     try {
-      const { timeFrom, timeTo } = request.body as Record<string, string>;
+      const { timeFrom, timeTo, dType } = request.body as Record<string, string>;
       if (!timeFrom || !timeTo) {
         return sendError(reply, 'timeFrom and timeTo are required');
       }
@@ -636,7 +637,7 @@ if (disposalAge) {
       fetchJobs.set(jobId, job);
 
       // Start the job asynchronously — do not await
-      runFetchJob(jobId, timeFrom, timeTo).catch((error) => {
+      runFetchJob(jobId, timeFrom, timeTo, (dType as 'P'|'F') || 'P').catch((error) => {
         console.error(`[FETCH-JOB ${jobId}] Unhandled error:`, error);
         const j = fetchJobs.get(jobId);
         if (j) {
@@ -686,12 +687,12 @@ if (disposalAge) {
     preHandler: [authenticate],
   }, async (request, reply) => {
     try {
-      const { timeFrom, timeTo } = request.body as Record<string, string>;
+      const { timeFrom, timeTo, dType } = request.body as Record<string, string>;
       if (!timeFrom || !timeTo) {
         return sendError(reply, 'timeFrom and timeTo are required');
       }
 
-      const complaints = await collectComplaintsByRange(timeFrom, timeTo);
+      const complaints = await collectComplaintsByRange(timeFrom, timeTo, (dType as 'P'|'F') || 'P');
       const normalized = toNormalizedUnique(complaints);
       const lookups = await loadAllLookups();
       const { created, updated, errors } = await saveNormalizedComplaints(normalized, lookups);

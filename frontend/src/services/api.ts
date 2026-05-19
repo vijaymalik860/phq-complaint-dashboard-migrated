@@ -295,9 +295,9 @@ export const cctnsApi = {
     const response = await api.post('/api/cctns/sync-complaints', { timeFrom, timeTo });
     return response.data;
   },
-  fetchAndSync: async (timeFrom: string, timeTo: string) => {
+  fetchAndSync: async (timeFrom: string, timeTo: string, dType: 'P' | 'F' = 'P') => {
     try {
-      const response = await api.post('/api/cctns/fetch-and-sync', { timeFrom, timeTo });
+      const response = await api.post('/api/cctns/fetch-and-sync', { timeFrom, timeTo, dType });
       return response.data;
     } catch (error: any) {
       console.error('❌ Fetch and sync failed:', error.response?.data || error.message);
