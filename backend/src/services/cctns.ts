@@ -102,7 +102,7 @@ export async function fetchCctnsComplaints(timeFrom: string, timeTo: string): Pr
     throw new Error('CCTNS_COMPLAINT_API or CCTNS_DECRYPT_KEY not configured');
   }
 
-  const url = `${apiUrl}?TimeFrom=${encodeURIComponent(timeFrom)}&TimeTo=${encodeURIComponent(timeTo)}`;
+  const url = `${apiUrl}?TimeFrom=${timeFrom}&TimeTo=${timeTo}`;
   console.log(`[CCTNS] Request URL: ${url}`);
   
   const res = await fetch(url, {
