@@ -160,6 +160,7 @@ export const CCTNSPage = () => {
     },
     enabled: !!activeJobId,
     refetchInterval: (query) => {
+      if (query.state.status === 'error' || query.state.error) return false;
       const status = query.state.data?.data?.status;
       if (status === 'success' || status === 'error') return false;
       return 2000; // Poll every 2 seconds
@@ -168,7 +169,16 @@ export const CCTNSPage = () => {
   });
 
   useEffect(() => {
-    if (jobQuery.data?.data) {
+    if (jobQuery.isError) {
+      const error: any = jobQuery.error;
+      // If the backend restarted and the job is gone, clear it
+      if (error?.response?.status === 404) {
+        setActiveJobId(null);
+        setJobStatus('');
+      } else {
+        setJobStatus('error');
+      }
+    } else if (jobQuery.data?.data) {
       const data = jobQuery.data.data;
       setJobStatus(data.status);
       if (data.status === 'success' || data.status === 'error') {
@@ -182,15 +192,6 @@ export const CCTNSPage = () => {
           setActiveJobId(null);
           setJobStatus('');
         }, 5000);
-      }
-    } else if (jobQuery.isError) {
-      const error: any = jobQuery.error;
-      // If the backend restarted and the job is gone, clear it
-      if (error?.response?.status === 404) {
-        setActiveJobId(null);
-        setJobStatus('');
-      } else {
-        setJobStatus('error');
       }
     }
   }, [jobQuery.data, jobQuery.isError, jobQuery.error, queryClient]);
