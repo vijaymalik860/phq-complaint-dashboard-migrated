@@ -180,6 +180,7 @@ interface FetchJob {
   error?: string;
   startedAt: Date;
   completedAt?: Date;
+  syncRunId?: number;
 }
 
 const fetchJobs = new Map<string, FetchJob>();
@@ -190,6 +191,24 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
 
   job.status = 'running';
   console.log(`[FETCH-JOB ${jobId}] Starting fetch job: ${timeFrom} to ${timeTo}`);
+
+  // Create initial SyncRun record so we have a log even if the server restarts
+  try {
+    const run = await prisma.syncRun.create({
+      data: {
+        kind: 'cctns-manual',
+        status: 'running',
+        startedAt: job.startedAt,
+        timeFrom: timeFrom,
+        timeTo: timeTo,
+        syncType: dType,
+        message: `Manual fetch started: ${timeFrom} to ${timeTo}`,
+      },
+    });
+    job.syncRunId = run.id;
+  } catch (error: any) {
+    console.error(`[FETCH-JOB ${jobId}] Failed to create initial sync run record:`, error.message);
+  }
 
   try {
     // Validate date range early
@@ -243,23 +262,27 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
     
     console.log(`[FETCH-JOB ${jobId}] Completed successfully:`, job.result);
 
-    // Also create a SyncRun record for audit trail
+    // Also update/create a SyncRun record for audit trail
     try {
-      await prisma.syncRun.create({
-        data: {
-          kind: 'cctns-manual',
-          status: errors > 0 ? 'partial' : 'success',
-          startedAt: job.startedAt,
-          endedAt: job.completedAt,
-          fetchedCount: complaints.length,
-          upsertedCount: created + updated,
-          errorCount: errors,
-          timeFrom: timeFrom,
-          timeTo: timeTo,
-          syncType: dType,
-          message: `Manual fetch: ${timeFrom} to ${timeTo}`,
-        },
-      });
+      const data = {
+        kind: 'cctns-manual',
+        status: errors > 0 ? 'partial' : 'success',
+        startedAt: job.startedAt,
+        endedAt: job.completedAt,
+        fetchedCount: complaints.length,
+        upsertedCount: created + updated,
+        errorCount: errors,
+        timeFrom: timeFrom,
+        timeTo: timeTo,
+        syncType: dType,
+        message: `Manual fetch: ${timeFrom} to ${timeTo}`,
+      };
+      
+      if (job.syncRunId) {
+        await prisma.syncRun.update({ where: { id: job.syncRunId }, data });
+      } else {
+        await prisma.syncRun.create({ data });
+      }
     } catch (syncRunError: any) {
       console.error(`[FETCH-JOB ${jobId}] Failed to create sync run record:`, syncRunError.message);
       // Don't fail the job just because we couldn't create the audit record
@@ -272,21 +295,25 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
     
     console.error(`[FETCH-JOB ${jobId}] Job failed:`, errorMsg);
 
-    // Always try to create error sync run for audit
+    // Always try to update/create error sync run for audit
     try {
-      await prisma.syncRun.create({
-        data: {
-          kind: 'cctns-manual',
-          status: 'error',
-          startedAt: job.startedAt,
-          endedAt: job.completedAt,
-          errorCount: 1,
-          timeFrom: timeFrom,
-          timeTo: timeTo,
-          syncType: dType,
-          message: `Manual fetch failed: ${timeFrom} to ${timeTo} — ${errorMsg}`,
-        },
-      });
+      const data = {
+        kind: 'cctns-manual',
+        status: 'error',
+        startedAt: job.startedAt,
+        endedAt: job.completedAt,
+        errorCount: 1,
+        timeFrom: timeFrom,
+        timeTo: timeTo,
+        syncType: dType,
+        message: `Manual fetch failed: ${timeFrom} to ${timeTo} — ${errorMsg}`,
+      };
+      
+      if (job.syncRunId) {
+        await prisma.syncRun.update({ where: { id: job.syncRunId }, data });
+      } else {
+        await prisma.syncRun.create({ data });
+      }
     } catch (syncRunError: any) {
       console.error(`[FETCH-JOB ${jobId}] Failed to create error sync run record:`, syncRunError.message);
     }
