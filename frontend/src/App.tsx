@@ -10,6 +10,7 @@ import ComplaintsPage from './pages/admin/Complaints';
 import CCTNSPage from './pages/admin/CCTNS';
 import ComplaintDetail from './pages/admin/ComplaintDetail';
 import ComplaintAdd from './pages/admin/ComplaintAdd';
+import DevTools from './pages/admin/DevTools';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -106,6 +107,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <CCTNSPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dev/update-code"
+            element={
+              <ProtectedRoute>
+                <DevTools />
               </ProtectedRoute>
             }
           />

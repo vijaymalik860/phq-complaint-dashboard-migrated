@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GlobalFilterBar } from './GlobalFilterBar';
 import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
-import api from '../../services/api';
 export { useChartExpand } from '../../contexts/ChartContext';
 
 interface LayoutProps {
@@ -41,17 +40,6 @@ export const Layout = ({ children }: LayoutProps) => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
-  };
-
-  const handleDeployUpdate = async () => {
-    if (!window.confirm("Deploy latest update? This will pull the latest code from GitHub, rebuild, and restart the server.")) return;
-
-    try {
-      const response = await api.post('/api/system/trigger-deployment');
-      window.alert(response.data.message || 'Deployment triggered successfully! Server is now pulling code and restarting.');
-    } catch (err: any) {
-      window.alert(err.response?.data?.error || err.message || 'Failed to trigger deployment. You might not have the required permissions.');
-    }
   };
 
   const getModuleName = () => {
@@ -163,34 +151,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button
-            onClick={handleDeployUpdate}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '10px',
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid #3b82f6',
-              borderRadius: '6px',
-              color: '#3b82f6',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Update System
-          </button>
-
+        <div style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid #334155' }}>
           <button
             onClick={handleLogout}
             style={{
