@@ -669,23 +669,21 @@ if (disposalAge) {
       };
       fetchJobs.set(jobId, job);
 
-      // Start the job asynchronously — do not await
-      runFetchJob(jobId, timeFrom, timeTo, (dType as 'P'|'F') || 'P').catch((error) => {
-        console.error(`[FETCH-JOB ${jobId}] Unhandled error:`, error);
-        const j = fetchJobs.get(jobId);
-        if (j) {
-          j.status = 'error';
-          j.error = error instanceof Error ? error.message : 'Unknown error';
-          j.completedAt = new Date();
-        }
-      });
+      // Await the job to complete synchronously for Vercel Serverless compatibility
+      await runFetchJob(jobId, timeFrom, timeTo, (dType as 'P'|'F') || 'P');
+        
+      const finishedJob = fetchJobs.get(jobId);
+      if (finishedJob?.status === 'error') {
+        return sendError(reply, finishedJob.error || 'Sync failed');
+      }
 
-      // Return immediately with job ID for polling
+      // Return completed status so frontend skips polling
       return sendSuccess(reply, {
         jobId,
-        status: 'pending',
-        message: 'Fetch and sync job started. Poll GET /cctns/fetch-status/:jobId for progress.',
-      }, 'Fetch job started', 202);
+        status: finishedJob?.status || 'success',
+        result: finishedJob?.result,
+        message: 'Fetch and sync completed.',
+      }, 'Fetch job completed', 200);
     } catch (error) {
       console.error('[FETCH-AND-SYNC] Failed to start job:', error);
       return sendError(reply, `Failed to start fetch job: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -939,19 +937,23 @@ if (disposalAge) {
       };
       fetchJobs.set(jobId, job);
 
-      runFetchJob(jobId, timeFrom, timeTo).catch((err) => {
-        console.error(`[QUICK-SYNC ${jobId}] Unhandled error:`, err);
-        const j = fetchJobs.get(jobId);
-        if (j) { j.status = 'error'; j.error = String(err); j.completedAt = new Date(); }
-      });
+      // Await the job to complete synchronously for Vercel Serverless compatibility
+      await runFetchJob(jobId, timeFrom, timeTo);
+        
+      const finishedJob = fetchJobs.get(jobId);
+      if (finishedJob?.status === 'error') {
+        return sendError(reply, finishedJob.error || 'Quick sync failed');
+      }
 
+      // Return completed status so frontend skips polling
       return sendSuccess(reply, {
         jobId,
-        status: 'pending',
+        status: finishedJob?.status || 'success',
+        result: finishedJob?.result,
         timeFrom,
         timeTo,
-        message: `Quick sync started from ${timeFrom} to ${timeTo}. Poll /cctns/fetch-status/${jobId} for progress.`,
-      }, 'Quick sync started', 202);
+        message: `Quick sync completed from ${timeFrom} to ${timeTo}.`,
+      }, 'Quick sync completed', 200);
     } catch (error: any) {
       return sendError(reply, `Quick sync failed to start: ${error.message}`);
     }

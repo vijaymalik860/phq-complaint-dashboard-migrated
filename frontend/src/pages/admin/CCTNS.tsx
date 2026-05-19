@@ -125,7 +125,15 @@ export const CCTNSPage = () => {
     mutationFn: (range: { from: string; to: string; dType: 'P'|'F' }) =>
       cctnsApi.fetchAndSync(range.from, range.to, range.dType),
     onSuccess: (data) => {
-      if (data?.data?.jobId) {
+      // For synchronous responses, bypass polling entirely
+      if (data?.data?.status === 'success' || data?.data?.status === 'partial') {
+        setJobStatus('success');
+        queryClient.invalidateQueries({ queryKey: ['cctns-synced'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-history'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-last-sync-date'] });
+        setTimeout(() => setJobStatus(''), 5000);
+      } else if (data?.data?.jobId) {
+        // Fallback for async polling (if supported)
         setActiveJobId(data.data.jobId);
         setJobStatus('pending');
       }
@@ -136,7 +144,15 @@ export const CCTNSPage = () => {
   const quickSyncMutation = useMutation({
     mutationFn: () => cctnsApi.quickSync(),
     onSuccess: (data) => {
-      if (data?.data?.jobId) {
+      // For synchronous responses, bypass polling entirely
+      if (data?.data?.status === 'success' || data?.data?.status === 'partial') {
+        setJobStatus('success');
+        queryClient.invalidateQueries({ queryKey: ['cctns-synced'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-history'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-last-sync-date'] });
+        setTimeout(() => setJobStatus(''), 5000);
+      } else if (data?.data?.jobId) {
+        // Fallback for async polling
         setActiveJobId(data.data.jobId);
         setJobStatus('pending');
       }
