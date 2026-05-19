@@ -344,27 +344,51 @@ $env:PGCONNECT_TIMEOUT = ""
 # ── STEP 8: Install PM2 ───────────────────────────────────────────────────────
 Write-Step "8" "Installing PM2 globally"
 
-npm install -g pm2 pm2-windows-startup 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to install PM2." }
-Write-Ok "PM2 installed."
+# npm always writes notices to stderr - must use Continue mode or they crash the script
+$ErrorActionPreference = "Continue"
+
+if (Find-Cmd "pm2") {
+    $pm2Ver = (pm2 --version 2>&1 | Select-Object -First 1)
+    Write-Ok "PM2 already installed (v$pm2Ver) - skipping."
+} else {
+    Write-Host "    Installing PM2 and pm2-windows-startup..." -ForegroundColor DarkGray
+    npm install -g pm2 pm2-windows-startup 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        $ErrorActionPreference = "Stop"
+        Write-Fail "Failed to install PM2. Check internet and npm access."
+    }
+    Write-Ok "PM2 installed."
+}
+
+# Ensure pm2-windows-startup is present even if PM2 was pre-installed
+npm list -g pm2-windows-startup 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "    Installing pm2-windows-startup..." -ForegroundColor DarkGray
+    npm install -g pm2-windows-startup 2>&1 | Out-Null
+}
+
+$ErrorActionPreference = "Stop"
 
 # ── STEP 9: Backend Build ─────────────────────────────────────────────────────
 Write-Step "9" "Installing backend dependencies and building"
 
 Set-Location (Join-Path $InstallDir "backend")
 
-Write-Host "    npm install..." -ForegroundColor DarkGray
-npm install --loglevel=error
-if ($LASTEXITCODE -ne 0) { Write-Fail "Backend npm install failed." }
+$ErrorActionPreference = "Continue"
+
+Write-Host "    npm install (backend)..." -ForegroundColor DarkGray
+npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Backend npm install failed." }
 
 Write-Host "    Generating Prisma client..." -ForegroundColor DarkGray
-npx prisma generate
-if ($LASTEXITCODE -ne 0) { Write-Fail "Prisma generate failed." }
+npx prisma generate 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Prisma generate failed." }
 
 Write-Host "    Compiling TypeScript..." -ForegroundColor DarkGray
-npm run build
-if ($LASTEXITCODE -ne 0) { Write-Fail "Backend TypeScript build failed." }
+npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Backend TypeScript build failed." }
 
+$ErrorActionPreference = "Stop"
 Write-Ok "Backend built."
 
 # ── STEP 10: Frontend Build ───────────────────────────────────────────────────
@@ -372,34 +396,44 @@ Write-Step "10" "Building frontend (React + Vite)"
 
 Set-Location (Join-Path $InstallDir "frontend")
 
-Write-Host "    npm install..." -ForegroundColor DarkGray
-npm install --loglevel=error
-if ($LASTEXITCODE -ne 0) { Write-Fail "Frontend npm install failed." }
+$ErrorActionPreference = "Continue"
+
+Write-Host "    npm install (frontend)..." -ForegroundColor DarkGray
+npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Frontend npm install failed." }
 
 Write-Host "    Building for production..." -ForegroundColor DarkGray
-npm run build
-if ($LASTEXITCODE -ne 0) { Write-Fail "Frontend build failed." }
+npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Frontend build failed." }
 
+$ErrorActionPreference = "Stop"
 Write-Ok "Frontend built to frontend\dist"
 
 # ── STEP 11: Prisma DB Push ───────────────────────────────────────────────────
 Write-Step "11" "Applying database schema"
 
 Set-Location (Join-Path $InstallDir "backend")
-npx prisma db push --accept-data-loss
-if ($LASTEXITCODE -ne 0) { Write-Fail "Prisma db push failed. Check DATABASE_URL in backend\.env." }
+
+$ErrorActionPreference = "Continue"
+npx prisma db push --accept-data-loss 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Prisma db push failed. Check DATABASE_URL in backend\.env." }
+$ErrorActionPreference = "Stop"
 Write-Ok "Database schema applied."
 
 # ── STEP 12: Seed Data ────────────────────────────────────────────────────────
 Write-Step "12" "Seeding admin account and master data"
 
+$ErrorActionPreference = "Continue"
+
 Write-Host "    Creating admin account (admin / admin123)..." -ForegroundColor DarkGray
-npx tsx create-admin.ts
-if ($LASTEXITCODE -ne 0) { Write-Fail "Admin seed script failed." }
+npx tsx create-admin.ts 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Admin seed script failed." }
 
 Write-Host "    Seeding Haryana districts and police stations..." -ForegroundColor DarkGray
-node scripts/seed-master-data.js
+node scripts/seed-master-data.js 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+# Non-fatal - master data can also sync via CCTNS later
 
+$ErrorActionPreference = "Stop"
 Write-Ok "Admin and master data ready."
 
 # ── STEP 13: PM2 Ecosystem Config ────────────────────────────────────────────
@@ -441,14 +475,15 @@ Write-Step "14" "Starting app with PM2"
 Set-Location $InstallDir
 $ErrorActionPreference = "Continue"
 pm2 delete grievance-monitor 2>&1 | Out-Null
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
-pm2 start ecosystem.config.cjs
-if ($LASTEXITCODE -ne 0) { Write-Fail "PM2 failed to start the application." }
+pm2 start ecosystem.config.cjs 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "PM2 failed to start the application." }
 pm2 save 2>&1 | Out-Null
 
 Write-Host "    Configuring PM2 auto-start on Windows boot..." -ForegroundColor DarkGray
 pm2-startup install 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 Write-Ok "PM2 running and boot-persistence configured."
 
 # ── STEP 15: Health Check ─────────────────────────────────────────────────────
