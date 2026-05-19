@@ -17,6 +17,7 @@ import { cctnsRoutes } from './routes/cctns.js';
 
 import { importExportRoutes } from './routes/import-export.js';
 import { governmentRoutes } from './routes/government.js';
+import { systemRoutes } from './routes/system.js';
 import { startCctnsBackgroundSync } from './jobs/cctns-sync-job.js';
 
 export const app = Fastify({ logger: true });
@@ -40,6 +41,7 @@ export async function buildApp() {
   await app.register(cctnsRoutes, { prefix: '/api' });
   await app.register(importExportRoutes, { prefix: '/api' });
   await app.register(governmentRoutes, { prefix: '/api' });
+  await app.register(systemRoutes, { prefix: '/api' });
 
   app.get('/api/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
