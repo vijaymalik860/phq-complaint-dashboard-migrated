@@ -288,13 +288,12 @@ export const CCTNSPage = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 min
   });
 
-  // ── Sync run history ──
+  // 🚀 Sync run history 🚀
   const historyQuery = useQuery({
     queryKey: ['cctns-history'],
     queryFn: () => cctnsApi.syncRuns(1, 50),
-    enabled: activeTab === 'history',
-    staleTime: 0,              // always fetch fresh when re-enabled
-    refetchOnMount: 'always',  // force reload whenever the tab is switched to
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Handle response structure: response.data = { success, data: { data: [...], pagination: {...} }, message }
@@ -985,16 +984,16 @@ export const CCTNSPage = () => {
                     Showing <strong>{liveData.length}</strong> most recently synced records
                   </span>
                   <span style={{ color: 'var(--text-muted)' }}>
-                    Sync interval: <strong>4h</strong> | Last updated:{' '}
-                    <strong>
-                      {liveData.length > 0
-                        ? new Date(liveData[0].updatedAt).toLocaleString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit', second: '2-digit'
-                        })
-                        : new Date().toLocaleTimeString('en-IN')}
-                    </strong>
-                  </span>
+                      Sync interval: <strong>4h</strong> | Last sync attempt:{' '}
+                      <strong style={{ color: historyData.length > 0 && historyData[0].status === 'error' ? '#ef4444' : 'inherit' }}>
+                        {historyData.length > 0
+                          ? `${new Date(historyData[0].startedAt).toLocaleString('en-IN', {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })} - ${historyData[0].status === 'error' ? 'Failed' : historyData[0].status === 'partial' ? 'Partial' : 'Success'}`
+                          : 'Never'}
+                      </strong>
+                    </span>
                 </div>
                 <DataTable title="Latest CCTNS Records" data={liveData} columns={recordCols} maxHeight="calc(100vh - 320px)" />
               </>
