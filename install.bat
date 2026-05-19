@@ -318,22 +318,28 @@ Write-Step "7" "Creating database phq_dashboard"
 
 Start-Sleep -Seconds 3
 
-$env:PGPASSWORD = $DbPass
-$checkResult    = psql -U postgres -h localhost -p $DbPort --connect-timeout=10 -tAc "SELECT 1 FROM pg_database WHERE datname='phq_dashboard';" 2>&1
+# PGCONNECT_TIMEOUT works across all PG versions (14-18); --connect-timeout flag is not supported by PG18
+$env:PGPASSWORD       = $DbPass
+$env:PGCONNECT_TIMEOUT = "10"
+
+$checkResult = psql -U postgres -h localhost -p $DbPort -tAc "SELECT 1 FROM pg_database WHERE datname='phq_dashboard';" 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Fail "Cannot connect to PostgreSQL at port $DbPort. Check the password and that the service is running. Error: $checkResult"
+    $env:PGPASSWORD       = ""
+    $env:PGCONNECT_TIMEOUT = ""
+    Write-Fail "Cannot connect to PostgreSQL at port $DbPort. Check password and that the service is running.`n    Error: $checkResult"
 }
 $dbExists = ("$checkResult".Trim() -eq "1")
 
 if (-not $dbExists) {
     Write-Host "    Creating database..." -ForegroundColor DarkGray
-    psql -U postgres -h localhost -p $DbPort --connect-timeout=10 -c "CREATE DATABASE phq_dashboard;" 2>&1 | Out-Null
+    psql -U postgres -h localhost -p $DbPort -c "CREATE DATABASE phq_dashboard;" 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Fail "Could not create database phq_dashboard. Check PostgreSQL logs." }
     Write-Ok "Database phq_dashboard created."
 } else {
     Write-Ok "Database phq_dashboard already exists."
 }
-$env:PGPASSWORD = ""
+$env:PGPASSWORD        = ""
+$env:PGCONNECT_TIMEOUT = ""
 
 # ── STEP 8: Install PM2 ───────────────────────────────────────────────────────
 Write-Step "8" "Installing PM2 globally"
