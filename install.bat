@@ -384,9 +384,11 @@ Write-Host "    Generating Prisma client..." -ForegroundColor DarkGray
 npx prisma generate 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Prisma generate failed." }
 
+$env:NODE_OPTIONS = "--max-old-space-size=4096"
 Write-Host "    Compiling TypeScript..." -ForegroundColor DarkGray
 npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Backend TypeScript build failed." }
+$env:NODE_OPTIONS = ""
 
 $ErrorActionPreference = "Stop"
 Write-Ok "Backend built."
@@ -402,9 +404,11 @@ Write-Host "    npm install (frontend)..." -ForegroundColor DarkGray
 npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Frontend npm install failed." }
 
+$env:NODE_OPTIONS = "--max-old-space-size=4096"
 Write-Host "    Building for production..." -ForegroundColor DarkGray
 npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Frontend build failed." }
+$env:NODE_OPTIONS = ""
 
 $ErrorActionPreference = "Stop"
 Write-Ok "Frontend built to frontend\dist"
