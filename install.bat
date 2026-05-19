@@ -297,7 +297,9 @@ if (-not (Test-Path $envExample)) {
     Write-Fail "backend\.env.example not found in repository."
 }
 
-$DbUrl    = "postgresql://postgres:${DbPass}@localhost:${DbPort}/phq_dashboard?schema=public"
+# URL-encode password so special chars (@, #, !, etc.) don't break the connection URL
+$DbPassEncoded = [Uri]::EscapeDataString($DbPass)
+$DbUrl    = "postgresql://postgres:${DbPassEncoded}@localhost:${DbPort}/phq_dashboard?schema=public"
 $envLines = Get-Content $envExample
 
 $newLines = $envLines | ForEach-Object {
@@ -317,13 +319,16 @@ Write-Step "7" "Creating database phq_dashboard"
 Start-Sleep -Seconds 3
 
 $env:PGPASSWORD = $DbPass
-$checkResult    = psql -U postgres -h localhost -p $DbPort -tAc "SELECT 1 FROM pg_database WHERE datname='phq_dashboard';" 2>&1
-$dbExists       = ("$checkResult".Trim() -eq "1")
+$checkResult    = psql -U postgres -h localhost -p $DbPort --connect-timeout=10 -tAc "SELECT 1 FROM pg_database WHERE datname='phq_dashboard';" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Cannot connect to PostgreSQL at port $DbPort. Check the password and that the service is running. Error: $checkResult"
+}
+$dbExists = ("$checkResult".Trim() -eq "1")
 
 if (-not $dbExists) {
     Write-Host "    Creating database..." -ForegroundColor DarkGray
-    psql -U postgres -h localhost -p $DbPort -c "CREATE DATABASE phq_dashboard;" 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Could not create database phq_dashboard." }
+    psql -U postgres -h localhost -p $DbPort --connect-timeout=10 -c "CREATE DATABASE phq_dashboard;" 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Fail "Could not create database phq_dashboard. Check PostgreSQL logs." }
     Write-Ok "Database phq_dashboard created."
 } else {
     Write-Ok "Database phq_dashboard already exists."
