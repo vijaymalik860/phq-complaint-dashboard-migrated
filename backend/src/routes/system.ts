@@ -26,7 +26,8 @@ export async function systemRoutes(app: FastifyInstance) {
           stdio: 'ignore',
           env: {
             ...process.env,
-            DEPLOY_NO_ELEVATION: 'true'
+            DEPLOY_NO_ELEVATION: 'true',
+            DEPLOY_BACKGROUND: 'true',  // signals deploy.bat to skip interactive Read-Host prompts
           }
         });
         
