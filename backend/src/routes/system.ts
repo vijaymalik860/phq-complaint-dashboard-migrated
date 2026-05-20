@@ -23,7 +23,11 @@ export async function systemRoutes(app: FastifyInstance) {
         
         const child = spawn('cmd.exe', ['/c', scriptPath], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
+          env: {
+            ...process.env,
+            DEPLOY_NO_ELEVATION: 'true'
+          }
         });
         
         child.unref();

@@ -4,12 +4,14 @@ setlocal disabledelayedexpansion
 title Grievance Monitoring System - Deploy Update
 color 0B
 
+if "%DEPLOY_NO_ELEVATION%"=="true" goto :skip_elevation_check
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo Requesting Administrator privileges...
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     exit /b
 )
+:skip_elevation_check
 
 echo.
 echo ============================================================
@@ -34,6 +36,21 @@ $ErrorActionPreference = "Stop"
 
 $InstallDir = "C:\PHQ-Dashboard"
 $AppPort = 3001
+
+# Attempt to load custom PORT from backend/.env if available
+$envPath = Join-Path $InstallDir "backend\.env"
+if (Test-Path $envPath) {
+    $envContent = Get-Content $envPath
+    foreach ($line in $envContent) {
+        if ($line -match '^\s*PORT\s*=\s*(.+)$') {
+            $parsedPort = $Matches[1].Trim()
+            $parsedPort = $parsedPort -replace '^["'']|["'']$'
+            if ([int]::TryParse($parsedPort, [ref]$null)) {
+                $AppPort = $parsedPort
+            }
+        }
+    }
+}
 
 function Write-Step {
     param([string]$n, [string]$msg)
@@ -63,7 +80,7 @@ function Rollback-Changes {
     git reset --hard HEAD@{1} 2>&1 | Out-Null
     
     Write-Host "    Restarting PM2 service with previous build..." -ForegroundColor DarkGray
-    pm2 restart grievance-monitor 2>&1 | Out-Null
+    pm2 restart grievance-backend grievance-frontend 2>&1 | Out-Null
     Write-Ok "Rollback complete. App should be running the previous version."
 }
 
@@ -175,7 +192,7 @@ Write-Step "5" "Restarting App via PM2"
 Set-Location $InstallDir
 $ErrorActionPreference = "Continue"
 
-pm2 restart grievance-monitor 2>&1 | Out-Null
+pm2 restart grievance-backend grievance-frontend 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to restart PM2 service." }
 
 Write-Host "    Waiting for service to warm up..." -ForegroundColor DarkGray
