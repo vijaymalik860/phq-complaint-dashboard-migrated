@@ -20,11 +20,6 @@ echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((Get-Content -Encoding UTF8 '%~f0') -join [Environment]::NewLine)"
 
-echo.
-echo ========================================================
-echo   Script finished. Press any key to close.
-echo ========================================================
-pause >nul
 exit /b 0
 #>
 
@@ -110,11 +105,31 @@ if ($null -ne $envBackup) {
     Write-Ok "Latest code pulled."
 }
 
-# ── STEP 2: Backend Build ─────────────────────────────────────────────────────
-Write-Step "2" "Building Backend"
+# ── STEP 2: Frontend Build ───────────────────────────────────────────────────
+Write-Step "2" "Building Frontend"
+
+Set-Location (Join-Path $InstallDir "frontend")
+
+$ErrorActionPreference = "Continue"
+
+Write-Host "    Installing dependencies..." -ForegroundColor DarkGray
+npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { Write-Fail "Frontend npm install failed." }
+
+Write-Host "    Building for production..." -ForegroundColor DarkGray
+$env:NODE_OPTIONS = "--max-old-space-size=4096"
+npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+if ($LASTEXITCODE -ne 0) { 
+    $env:NODE_OPTIONS = ""
+    Write-Fail "Frontend build failed." 
+}
+$env:NODE_OPTIONS = ""
+Write-Ok "Frontend built."
+
+# ── STEP 3: Backend Build ─────────────────────────────────────────────────────
+Write-Step "3" "Building Backend"
 
 Set-Location (Join-Path $InstallDir "backend")
-$ErrorActionPreference = "Continue"
 
 Write-Host "    Installing dependencies..." -ForegroundColor DarkGray
 npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
@@ -133,25 +148,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 $env:NODE_OPTIONS = ""
 Write-Ok "Backend built."
-
-# ── STEP 3: Frontend Build ────────────────────────────────────────────────────
-Write-Step "3" "Building Frontend"
-
-Set-Location (Join-Path $InstallDir "frontend")
-
-Write-Host "    Installing dependencies..." -ForegroundColor DarkGray
-npm install --loglevel=error 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
-if ($LASTEXITCODE -ne 0) { Write-Fail "Frontend npm install failed." }
-
-Write-Host "    Building for production..." -ForegroundColor DarkGray
-$env:NODE_OPTIONS = "--max-old-space-size=4096"
-npm run build 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
-if ($LASTEXITCODE -ne 0) { 
-    $env:NODE_OPTIONS = ""
-    Write-Fail "Frontend build failed." 
-}
-$env:NODE_OPTIONS = ""
-Write-Ok "Frontend built."
 
 # ── STEP 4: DB Migration ──────────────────────────────────────────────────────
 Write-Step "4" "Applying Database Changes"

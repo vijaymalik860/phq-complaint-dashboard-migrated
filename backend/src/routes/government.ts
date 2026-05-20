@@ -273,9 +273,7 @@ export const governmentRoutes = async (fastify: FastifyInstance) => {
    *
    * Body: { districts: [{id, name}], policeStations: [{id, name, districtId, districtName}], offices: [{id, name}] }
    */
-  fastify.post('/gov/bulk-seed', {
-    preHandler: [authenticate],
-  }, async (request, reply) => {
+  fastify.post('/gov/bulk-seed', async (request, reply) => {
     try {
       const body = request.body as {
         districts?: Array<{ id: string; name: string }>;

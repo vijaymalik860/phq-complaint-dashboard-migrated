@@ -445,53 +445,7 @@ npx tsx create-admin.ts 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundC
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Admin seed script failed." }
 
 Write-Host "    Seeding Haryana districts and police stations..." -ForegroundColor DarkGray
-
-# Start backend temporarily so seed-master-data.js can call /api/gov/bulk-seed
-Write-Host "    Starting backend temporarily for seeding..." -ForegroundColor DarkGray
-$backendProc = Start-Process "node" -ArgumentList "dist/index.js" -WorkingDirectory (Join-Path $InstallDir "backend") -PassThru -WindowStyle Hidden
-
-# Wait for backend to be ready
-$ready = $false
-for ($i = 0; $i -lt 30; $i++) {
-    Start-Sleep -Seconds 1
-    try {
-        $null = Invoke-WebRequest -Uri "http://localhost:${AppPort}/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
-        $ready = $true
-        break
-    } catch {}
-}
-if (-not $ready) {
-    Write-Host "    WARNING: Backend did not start for seeding. Skipping master data seed." -ForegroundColor Yellow
-} else {
-    # Generate a temporary admin JWT so seed-master-data.js can call /api/gov/bulk-seed
-    $jwtPayload = @{
-        id    = 1
-        email = 'admin@phq.haryana.gov.in'
-        role  = 'superadmin'
-        iat   = [Math]::Floor((Get-Date).ToUniversalTime().Subtract((Get-Date '1970-01-01')).TotalSeconds)
-        exp   = [Math]::Floor((Get-Date).ToUniversalTime().AddHours(1).Subtract((Get-Date '1970-01-01')).TotalSeconds)
-    } | ConvertTo-Json -Compress
-
-    $jwtHeader    = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('{"alg":"HS256","typ":"JWT"}')).TrimEnd('=').Replace('+', '-').Replace('/', '_')
-    $jwtPayloadB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($jwtPayload)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
-
-    # HMAC-SHA256 sign
-    $hmac = New-Object System.Security.Cryptography.HMACSHA256
-    $hmac.Key = [Text.Encoding]::UTF8.GetBytes($JwtSecret)
-    $jwtSignature = [Convert]::ToBase64String($hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes("${jwtHeader}.${jwtPayloadB64}"))).TrimEnd('=').Replace('+', '-').Replace('/', '_')
-    $tempJwt = "${jwtHeader}.${jwtPayloadB64}.${jwtSignature}"
-
-    $env:JWT_TOKEN = $tempJwt
-    $env:BACKEND_URL = "http://localhost:${AppPort}"
-    node scripts/seed-master-data.js 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
-    Remove-Item Env:\JWT_TOKEN
-    Remove-Item Env:\BACKEND_URL
-}
-
-# Stop the temporary backend process
-if ($null -ne $backendProc -and -not $backendProc.HasExited) {
-    Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
-}
+node scripts/seed-master-data.js 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
 # Non-fatal - master data can also sync via CCTNS later
 
 $ErrorActionPreference = "Stop"
@@ -570,7 +524,7 @@ if (-not $healthy) {
     Write-Host "  WARNING: Health check did not respond." -ForegroundColor Yellow
     Write-Host "  Check logs: pm2 logs grievance-monitor" -ForegroundColor Yellow
 } else {
-    Write-Ok "Application healthy at http://localhost:$AppPort/api/health"
+    Write-Ok "Backend API healthy at http://localhost:$AppPort/api/health"
 }
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -578,6 +532,14 @@ Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "         INSTALLATION COMPLETE!                             " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Application : Grievance Monitoring System"
+Write-Host "  Department  : Haryana Police Headquarters"
+Write-Host "  Frontend    : http://localhost:$AppPort"
+Write-Host "  Backend API : http://localhost:$AppPort/api"
+Write-Host "  Login       : admin / admin123"
+Write-Host "  Database    : phq_dashboard @ localhost:$DbPort"
+Write-Host "  Folder      : $InstallDir"
 Write-Host ""
 Write-Host "  Useful commands:"
 Write-Host "    pm2 status                    - check running processes"
