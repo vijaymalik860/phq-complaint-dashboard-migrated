@@ -9,6 +9,24 @@ import { useFilters } from '@/contexts/FilterContext';
 
 type Tab = 'live' | 'synced' | 'history';
 
+// ── Live elapsed time hook ─────────────────────────────────────────────────────
+function useElapsedSeconds(startedAt: Date | null): number {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!startedAt) { setElapsed(0); return; }
+    const tick = () => setElapsed(Math.floor((Date.now() - startedAt.getTime()) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
+  return elapsed;
+}
+function fmtElapsed(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
 // Helpers for date input and API format conversion
 function todayIsoStr(): string {
   const d = new Date();
@@ -90,15 +108,24 @@ export const CCTNSPage = () => {
   // Sync job state (persist in localStorage so navigation doesn't kill it)
   const [activeJobId, setActiveJobId] = useState<string | null>(() => localStorage.getItem('cctnsActiveJobId'));
   const [jobStatus, setJobStatus] = useState<string>(() => localStorage.getItem('cctnsActiveJobId') ? 'pending' : '');
+  // Track when the job started so we can show elapsed time in the live row
+  const jobStartedAtRef = useRef<Date | null>(
+    localStorage.getItem('cctnsActiveJobId') ? new Date(localStorage.getItem('cctnsJobStartedAt') || Date.now()) : null
+  );
+  const [jobStartedAt, setJobStartedAt] = useState<Date | null>(jobStartedAtRef.current);
 
   useEffect(() => {
     if (activeJobId) {
       localStorage.setItem('cctnsActiveJobId', activeJobId);
     } else {
       localStorage.removeItem('cctnsActiveJobId');
+      localStorage.removeItem('cctnsJobStartedAt');
+      setJobStartedAt(null);
     }
   }, [activeJobId]);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Elapsed seconds counter for the live row
+  const elapsedSeconds = useElapsedSeconds(jobStartedAt);
 
   // Synced records filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,8 +153,13 @@ export const CCTNSPage = () => {
       cctnsApi.fetchAndSync(range.from, range.to, range.dType),
     onSuccess: (data) => {
       if (data?.data?.jobId) {
+        const now = new Date();
         setActiveJobId(data.data.jobId);
         setJobStatus('pending');
+        setJobStartedAt(now);
+        localStorage.setItem('cctnsJobStartedAt', now.toISOString());
+        // Auto-switch to history tab so user sees tracking immediately
+        setActiveTab('history');
       }
     },
   });
@@ -137,8 +169,13 @@ export const CCTNSPage = () => {
     mutationFn: () => cctnsApi.quickSync(),
     onSuccess: (data) => {
       if (data?.data?.jobId) {
+        const now = new Date();
         setActiveJobId(data.data.jobId);
         setJobStatus('pending');
+        setJobStartedAt(now);
+        localStorage.setItem('cctnsJobStartedAt', now.toISOString());
+        // Auto-switch to history tab so user sees tracking immediately
+        setActiveTab('history');
       }
     },
   });
@@ -288,12 +325,14 @@ export const CCTNSPage = () => {
     staleTime: 5 * 60 * 1000, // Cache for 5 min
   });
 
-  // 🚀 Sync run history 🚀
+  // 🚀 Sync run history — polls faster when a job is active for live updates 🚀
   const historyQuery = useQuery({
     queryKey: ['cctns-history'],
     queryFn: () => cctnsApi.syncRuns(1, 50),
     staleTime: 0,
     refetchOnMount: 'always',
+    // Poll every 3s when a job is running so DB row updates are reflected quickly
+    refetchInterval: activeJobId ? 3000 : false,
   });
 
   // Handle response structure: response.data = { success, data: { data: [...], pagination: {...} }, message }
@@ -302,29 +341,32 @@ export const CCTNSPage = () => {
   const liveData = liveQuery.data?.data?.data || [];
   const historyData = historyQuery.data?.data?.data || [];
 
-  // Debug logging for data loading issues
-  useEffect(() => {
-    console.log('🔍 CCTNS Debug:', {
-      activeTab,
-      syncedQueryState: {
-        isLoading: syncedQuery.isLoading,
-        isError: syncedQuery.isError,
-        error: syncedQuery.error,
-        rawData: syncedQuery.data,
-        syncedDataLength: syncedData.length,
-        syncedPagination,
-      },
-      liveQueryState: {
-        isLoading: liveQuery.isLoading,
-        isError: liveQuery.isError,
-        error: liveQuery.error,
-        rawData: liveQuery.data,
-        liveDataLength: liveData.length,
-      },
-    });
-  }, [activeTab, syncedQuery.isLoading, syncedQuery.isError, syncedQuery.data, liveQuery.isLoading, liveQuery.isError, liveQuery.data]);
-
   const isFetching = fetchMutation.isPending || quickSyncMutation.isPending || !!activeJobId;
+
+  // Build a synthetic "live" row that appears instantly at top of history when a job is active
+  const liveJobRow = activeJobId ? {
+    id: `__live__${activeJobId}`,
+    __isLive: true,
+    kind: 'cctns-manual',
+    syncType: isoToApiDate(timeTo) ? 'P' : 'P',
+    timeFrom: jobQuery.data?.data?.timeFrom || '—',
+    timeTo: jobQuery.data?.data?.timeTo || '—',
+    status: jobStatus || 'pending',
+    progress: jobQuery.data?.data?.progress || '',
+    progressPercentage: jobQuery.data?.data?.progressPercentage || 0,
+    startedAt: jobStartedAt?.toISOString() || new Date().toISOString(),
+    endedAt: null,
+    fetchedCount: jobQuery.data?.data?.result?.fetched ?? null,
+    upsertedCount: jobQuery.data?.data?.result ? (jobQuery.data.data.result.created + jobQuery.data.data.result.updated) : null,
+    errorCount: jobQuery.data?.data?.result?.errors ?? null,
+    message: jobQuery.data?.data?.progress || (jobStatus === 'pending' ? 'Sync job queued — starting soon...' : 'Processing...'),
+    elapsedSeconds,
+  } : null;
+
+  // Merge live row with DB history — live row always appears first
+  const displayHistoryData = liveJobRow
+    ? [liveJobRow, ...historyData.filter((r: any) => r.id !== liveJobRow.id)]
+    : historyData;
 
   // —— Export: fetch all records (no pagination limit) for Excel/PDF export ——
   const fetchAllCctnsForExport = useCallback(async () => {
@@ -543,15 +585,36 @@ export const CCTNSPage = () => {
       key: 'startedAt',
       label: 'Started',
       sortable: true,
-      render: (row) => <span>{formatDateTime(row.startedAt)}</span>,
+      render: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(row.startedAt)}</span>
+          {row.__isLive && row.elapsedSeconds != null && (
+            <span style={{ fontSize: 11, color: '#60a5fa', fontVariantNumeric: 'tabular-nums' }}>
+              ⏱ {fmtElapsed(row.elapsedSeconds)} elapsed
+            </span>
+          )}
+        </div>
+      ),
     },
-    { key: 'kind', label: 'Type', sortable: true },
+    {
+      key: 'kind',
+      label: 'Type',
+      sortable: true,
+      render: (row) => (
+        <span style={{ fontSize: 12, fontWeight: 500 }}>
+          {row.kind === 'cctns-manual' ? 'Manual' : row.kind === 'cctns-auto' ? 'Auto' : row.kind || '—'}
+        </span>
+      ),
+    },
     {
       key: 'syncType',
       label: 'Mode',
       render: (row) => (
-        <span style={{ fontWeight: 500 }}>
-          {row.syncType === 'F' ? 'Full (F)' : row.syncType === 'P' ? 'Partial (P)' : '—'}
+        <span style={{
+          fontWeight: 600, fontSize: 12,
+          color: row.syncType === 'F' ? '#a78bfa' : '#38bdf8',
+        }}>
+          {row.syncType === 'F' ? '⟳ Full' : row.syncType === 'P' ? '⤓ Partial' : '—'}
         </span>
       ),
     },
@@ -559,8 +622,8 @@ export const CCTNSPage = () => {
       key: 'syncRange',
       label: 'Sync Range',
       render: (row) => (
-        <span style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
-          {row.timeFrom && row.timeTo ? `${row.timeFrom} - ${row.timeTo}` : '—'}
+        <span style={{ whiteSpace: 'nowrap', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 12 }}>
+          {row.timeFrom && row.timeTo ? `${row.timeFrom} → ${row.timeTo}` : '—'}
         </span>
       ),
     },
@@ -568,60 +631,126 @@ export const CCTNSPage = () => {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (row) => (
-        <span
-          style={{
-            padding: '2px 10px',
-            borderRadius: '12px',
-            fontSize: '12px',
-            background:
-              row.status === 'success'
-                ? 'rgba(34,197,94,0.15)'
-                : row.status === 'partial'
-                  ? 'rgba(234,179,8,0.15)'
-                  : 'rgba(239,68,68,0.15)',
-            color:
-              row.status === 'success'
-                ? '#22c55e'
-                : row.status === 'partial'
-                  ? '#eab308'
-                  : '#ef4444',
-          }}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => {
+        const isRunning = row.status === 'running' || row.status === 'pending' || row.__isLive;
+        const isDone = row.status === 'success';
+        const isPartial = row.status === 'partial';
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 160 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              {isRunning && (
+                <span style={{
+                  display: 'inline-block',
+                  width: 10, height: 10, borderRadius: '50%',
+                  border: '2px solid #3b82f6',
+                  borderTopColor: 'transparent',
+                  animation: 'spin 0.8s linear infinite',
+                  flexShrink: 0,
+                }} />
+              )}
+              <span style={{
+                padding: '3px 10px',
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.02em',
+                background: isRunning ? 'rgba(59,130,246,0.18)'
+                  : isDone ? 'rgba(34,197,94,0.18)'
+                  : isPartial ? 'rgba(234,179,8,0.18)'
+                  : 'rgba(239,68,68,0.18)',
+                color: isRunning ? '#60a5fa'
+                  : isDone ? '#4ade80'
+                  : isPartial ? '#facc15'
+                  : '#f87171',
+                border: `1px solid ${isRunning ? 'rgba(59,130,246,0.35)'
+                  : isDone ? 'rgba(34,197,94,0.35)'
+                  : isPartial ? 'rgba(234,179,8,0.35)'
+                  : 'rgba(239,68,68,0.35)'}`,
+              }}>
+                {isRunning ? (row.status === 'pending' ? '⏳ Queued' : '🔄 Running') : isDone ? '✓ Success' : isPartial ? '⚠ Partial' : '✕ Failed'}
+              </span>
+            </div>
+            {/* Inline progress bar for live rows */}
+            {row.__isLive && (row.status === 'pending' || row.status === 'running') && (
+              <div style={{ width: '100%', background: 'rgba(59,130,246,0.12)', borderRadius: 4, height: 5, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                  width: `${row.progressPercentage || (row.status === 'running' ? 5 : 2)}%`,
+                  transition: 'width 0.5s ease',
+                  borderRadius: 4,
+                }} />
+              </div>
+            )}
+            {/* Progress label for live rows */}
+            {row.__isLive && row.progress && (
+              <span style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.3, maxWidth: 240 }}>
+                {row.progress}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'fetchedCount',
       label: 'Fetched',
       sortable: true,
-      align: 'right',
+      align: 'right' as const,
+      render: (row) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: row.fetchedCount ? 'inherit' : 'var(--text-muted)' }}>
+          {row.fetchedCount != null ? row.fetchedCount.toLocaleString() : (row.__isLive ? '—' : '0')}
+        </span>
+      ),
     },
     {
       key: 'upsertedCount',
-      label: 'Upserted',
+      label: 'Saved',
       sortable: true,
-      align: 'right',
+      align: 'right' as const,
+      render: (row) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#4ade80' }}>
+          {row.upsertedCount != null ? row.upsertedCount.toLocaleString() : (row.__isLive ? '—' : '0')}
+        </span>
+      ),
     },
     {
       key: 'errorCount',
       label: 'Errors',
       sortable: true,
-      align: 'right',
+      align: 'right' as const,
+      render: (row) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: row.errorCount ? '#f87171' : 'var(--text-muted)' }}>
+          {row.errorCount != null ? row.errorCount : (row.__isLive ? '—' : '0')}
+        </span>
+      ),
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      render: (row) => {
+        if (row.__isLive) return <span style={{ color: '#60a5fa', fontVariantNumeric: 'tabular-nums' }}>{fmtElapsed(row.elapsedSeconds || 0)}</span>;
+        if (!row.startedAt || !row.endedAt) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+        const secs = Math.floor((new Date(row.endedAt).getTime() - new Date(row.startedAt).getTime()) / 1000);
+        return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtElapsed(secs)}</span>;
+      },
     },
     {
       key: 'endedAt',
       label: 'Completed',
       sortable: true,
-      render: (row) => <span>{formatDateTime(row.endedAt)}</span>,
+      render: (row) => (
+        <span style={{ whiteSpace: 'nowrap', color: row.__isLive ? 'var(--text-muted)' : 'inherit' }}>
+          {row.__isLive ? 'In progress...' : formatDateTime(row.endedAt)}
+        </span>
+      ),
     },
     {
       key: 'message',
       label: 'Details',
       sortable: false,
       render: (row) => (
-        <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+        <div style={{ maxHeight: 80, overflowY: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
           {row.message || '—'}
         </div>
       ),
@@ -650,7 +779,7 @@ export const CCTNSPage = () => {
     }
 
     setFetchError(null);
-    setActiveTab('live');
+    // Auto-navigate to history tab happens inside fetchMutation.onSuccess
     fetchMutation.mutate({ from, to, dType });
   };
 
@@ -1206,27 +1335,100 @@ export const CCTNSPage = () => {
         {/* —— Sync History Tab —— */}
         {isConfigured && activeTab === 'history' && (
           <>
-            {historyQuery.isLoading ? (
+            {/* Live job banner at top of history tab */}
+            {activeJobId && (
+              <div style={{
+                marginBottom: 14,
+                padding: '14px 18px',
+                borderRadius: 10,
+                background: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+              }}>
+                {/* Animated pulse dot */}
+                <span style={{
+                  width: 12, height: 12, borderRadius: '50%',
+                  background: '#3b82f6',
+                  boxShadow: '0 0 0 0 rgba(59,130,246,0.6)',
+                  animation: 'syncPulse 1.4s ease-out infinite',
+                  flexShrink: 0,
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                    <strong style={{ fontSize: 14, color: '#93c5fd' }}>
+                      {jobStatus === 'pending' ? '⏳ Sync job queued — starting shortly...' :
+                        jobStatus === 'running' ? `🔄 ${jobQuery.data?.data?.progress || 'Sync in progress...'}` :
+                        jobStatus === 'success' ? '✓ Sync completed successfully!' :
+                        `✕ Sync failed: ${jobQuery.data?.data?.error || 'Unknown error'}`}
+                    </strong>
+                    <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                      ⏱ {fmtElapsed(elapsedSeconds)}
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div style={{ width: '100%', background: 'rgba(59,130,246,0.15)', borderRadius: 6, height: 8, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      background: jobStatus === 'success' ? '#22c55e' : jobStatus === 'error' ? '#ef4444' : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                      width: `${jobStatus === 'success' ? 100 : (jobQuery.data?.data?.progressPercentage || (jobStatus === 'running' ? 5 : 2))}%`,
+                      transition: 'width 0.5s ease',
+                      borderRadius: 6,
+                    }} />
+                  </div>
+                  {/* Result stats on completion */}
+                  {jobQuery.data?.data?.result && (
+                    <div style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                      <span>Fetched: <strong style={{ color: '#cbd5e1' }}>{jobQuery.data.data.result.fetched.toLocaleString()}</strong></span>
+                      <span>Saved: <strong style={{ color: '#4ade80' }}>{(jobQuery.data.data.result.created + jobQuery.data.data.result.updated).toLocaleString()}</strong></span>
+                      <span>Errors: <strong style={{ color: jobQuery.data.data.result.errors > 0 ? '#f87171' : '#64748b' }}>{jobQuery.data.data.result.errors}</strong></span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Spinner while loading AND no live row yet */}
+            {historyQuery.isLoading && !liveJobRow ? (
               <div className="loading-spinner">
                 <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               </div>
-            ) : historyData.length === 0 ? (
+            ) : displayHistoryData.length === 0 ? (
               <div className="empty-state">
-                <p>No sync history available.</p>
+                <p>No sync history available. Trigger a sync to see live tracking here.</p>
               </div>
             ) : (
               <>
-                <div style={{ marginBottom: 10, fontSize: 13, color: 'var(--text-muted)' }}>
-                  Showing <strong>{historyData.length}</strong> recent sync runs
+                <div style={{ marginBottom: 10, fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Showing <strong>{displayHistoryData.length}</strong> sync runs
+                  {activeJobId && (
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
+                      🔴 Live tracking active
+                    </span>
+                  )}
+                  {historyQuery.isFetching && !historyQuery.isLoading && (
+                    <span style={{ fontSize: 11, color: '#475569' }}>Refreshing...</span>
+                  )}
                 </div>
+                <style>{`
+                  @keyframes syncPulse {
+                    0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.6); }
+                    70% { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+                    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+                  }
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                `}</style>
                 <DataTable
                   title="CCTNS Sync History"
-                  data={historyData}
+                  data={displayHistoryData}
                   columns={historyCols}
-                  maxHeight="calc(100vh - 320px)"
+                  maxHeight="calc(100vh - 380px)"
                 />
               </>
             )}
