@@ -20,11 +20,6 @@ echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ((Get-Content -Encoding UTF8 '%~f0') -join [Environment]::NewLine)"
 
-echo.
-echo ========================================================
-echo   Script finished. Press any key to close.
-echo ========================================================
-pause >nul
 exit /b 0
 #>
 
@@ -102,6 +97,18 @@ if ([string]::IsNullOrWhiteSpace($DbPort)) { $DbPort = "5432" }
 
 $AppPort = Read-Host "  Backend app port? (default: 3001)"
 if ([string]::IsNullOrWhiteSpace($AppPort)) { $AppPort = "3001" }
+
+$JwtSecret = Read-Host "  JWT secret? (default: phq-dashboard-secret-key-2024)"
+if ([string]::IsNullOrWhiteSpace($JwtSecret)) { $JwtSecret = "phq-dashboard-secret-key-2024" }
+
+$CronSecret = Read-Host "  Cron secret? (default: sec_a9d3e7b1f4c62)"
+if ([string]::IsNullOrWhiteSpace($CronSecret)) { $CronSecret = "sec_a9d3e7b1f4c62" }
+
+$CctnsSecret = Read-Host "  CCTNS_SECRET_KEY? (default: UserHryDashboard)"
+if ([string]::IsNullOrWhiteSpace($CctnsSecret)) { $CctnsSecret = "UserHryDashboard" }
+
+$CctnsDecrypt = Read-Host "  CCTNS_DECRYPT_KEY? (default: O7yhrqWMMymKrM9Av64JkXo3GOoTebAyJlQ9diSxi0U=)"
+if ([string]::IsNullOrWhiteSpace($CctnsDecrypt)) { $CctnsDecrypt = "O7yhrqWMMymKrM9Av64JkXo3GOoTebAyJlQ9diSxi0U=" }
 
 Write-Ok "Configuration saved."
 
@@ -307,6 +314,10 @@ $newLines = $envLines | ForEach-Object {
     elseif ($_ -match '^DIRECT_URL=') { "DIRECT_URL=`"$DbUrl`"" }
     elseif ($_ -match '^PORT=')       { "PORT=$AppPort" }
     elseif ($_ -match '^NODE_ENV=')   { "NODE_ENV=production" }
+    elseif ($_ -match '^JWT_SECRET=') { "JWT_SECRET=`"$JwtSecret`"" }
+    elseif ($_ -match '^CRON_SECRET='){ "CRON_SECRET=$CronSecret" }
+    elseif ($_ -match '^CCTNS_SECRET_KEY=')   { "CCTNS_SECRET_KEY=$CctnsSecret" }
+    elseif ($_ -match '^CCTNS_DECRYPT_KEY=')  { "CCTNS_DECRYPT_KEY=$CctnsDecrypt" }
     else { $_ }
 }
 
@@ -434,7 +445,53 @@ npx tsx create-admin.ts 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundC
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "Admin seed script failed." }
 
 Write-Host "    Seeding Haryana districts and police stations..." -ForegroundColor DarkGray
-node scripts/seed-master-data.js 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+
+# Start backend temporarily so seed-master-data.js can call /api/gov/bulk-seed
+Write-Host "    Starting backend temporarily for seeding..." -ForegroundColor DarkGray
+$backendProc = Start-Process "node" -ArgumentList "dist/index.js" -WorkingDirectory (Join-Path $InstallDir "backend") -PassThru -WindowStyle Hidden
+
+# Wait for backend to be ready
+$ready = $false
+for ($i = 0; $i -lt 30; $i++) {
+    Start-Sleep -Seconds 1
+    try {
+        $null = Invoke-WebRequest -Uri "http://localhost:${AppPort}/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        $ready = $true
+        break
+    } catch {}
+}
+if (-not $ready) {
+    Write-Host "    WARNING: Backend did not start for seeding. Skipping master data seed." -ForegroundColor Yellow
+} else {
+    # Generate a temporary admin JWT so seed-master-data.js can call /api/gov/bulk-seed
+    $jwtPayload = @{
+        id    = 1
+        email = 'admin@phq.haryana.gov.in'
+        role  = 'superadmin'
+        iat   = [Math]::Floor((Get-Date).ToUniversalTime().Subtract((Get-Date '1970-01-01')).TotalSeconds)
+        exp   = [Math]::Floor((Get-Date).ToUniversalTime().AddHours(1).Subtract((Get-Date '1970-01-01')).TotalSeconds)
+    } | ConvertTo-Json -Compress
+
+    $jwtHeader    = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('{"alg":"HS256","typ":"JWT"}')).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+    $jwtPayloadB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($jwtPayload)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+
+    # HMAC-SHA256 sign
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256
+    $hmac.Key = [Text.Encoding]::UTF8.GetBytes($JwtSecret)
+    $jwtSignature = [Convert]::ToBase64String($hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes("${jwtHeader}.${jwtPayloadB64}"))).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+    $tempJwt = "${jwtHeader}.${jwtPayloadB64}.${jwtSignature}"
+
+    $env:JWT_TOKEN = $tempJwt
+    $env:BACKEND_URL = "http://localhost:${AppPort}"
+    node scripts/seed-master-data.js 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+    Remove-Item Env:\JWT_TOKEN
+    Remove-Item Env:\BACKEND_URL
+}
+
+# Stop the temporary backend process
+if ($null -ne $backendProc -and -not $backendProc.HasExited) {
+    Stop-Process -Id $backendProc.Id -Force -ErrorAction SilentlyContinue
+}
 # Non-fatal - master data can also sync via CCTNS later
 
 $ErrorActionPreference = "Stop"
@@ -522,13 +579,6 @@ Write-Host "============================================================" -Foreg
 Write-Host "         INSTALLATION COMPLETE!                             " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Application : Grievance Monitoring System"
-Write-Host "  Department  : Haryana Police Headquarters"
-Write-Host "  URL         : http://localhost:$AppPort"
-Write-Host "  Login       : admin / admin123"
-Write-Host "  Database    : phq_dashboard @ localhost:$DbPort"
-Write-Host "  Folder      : $InstallDir"
-Write-Host ""
 Write-Host "  Useful commands:"
 Write-Host "    pm2 status                    - check running processes"
 Write-Host "    pm2 logs grievance-monitor    - view live logs"
@@ -536,4 +586,3 @@ Write-Host "    pm2 restart grievance-monitor - restart app"
 Write-Host ""
 Write-Host "  For future updates run: deploy.bat"
 Write-Host ""
-Read-Host "Press Enter to close"

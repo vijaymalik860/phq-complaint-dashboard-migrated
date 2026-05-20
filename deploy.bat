@@ -83,6 +83,13 @@ Write-Step "1" "Pulling latest code"
 
 Set-Location $InstallDir
 
+# Preserve local secrets that are never committed
+$envBackup = $null
+$envPath   = Join-Path $InstallDir "backend\.env"
+if (Test-Path $envPath) {
+    $envBackup = Get-Content $envPath -Raw
+}
+
 # Save current commit hash for potential rollback
 $prevCommit = (git rev-parse HEAD)
 
@@ -95,7 +102,13 @@ git reset --hard origin/main 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to merge changes." }
 $ErrorActionPreference = "Stop"
 
-Write-Ok "Latest code pulled."
+# Restore .env so secrets are not lost
+if ($null -ne $envBackup) {
+    $envBackup | Set-Content $envPath -NoNewline -Encoding UTF8
+    Write-Ok "Latest code pulled. backend\.env preserved."
+} else {
+    Write-Ok "Latest code pulled."
+}
 
 # ── STEP 2: Backend Build ─────────────────────────────────────────────────────
 Write-Step "2" "Building Backend"
