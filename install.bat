@@ -1,5 +1,6 @@
 <# :
 @echo off
+chcp 65001 >nul 2>&1
 setlocal disabledelayedexpansion
 title Grievance Monitoring System - Automated Installation
 color 0A
@@ -491,8 +492,8 @@ module.exports = {
     },
     {
       name        : 'grievance-frontend',
-      script      : 'npm',
-      args        : 'run preview -- --port $FrontendPort --host 0.0.0.0',
+      script      : 'node_modules/vite/bin/vite.js',
+      args        : 'preview --port $FrontendPort --host 0.0.0.0',
       cwd         : '$frontendCwd',
       instances   : 1,
       autorestart : true,
@@ -515,13 +516,36 @@ Write-Step "14" "Starting backend and frontend with PM2"
 Set-Location $InstallDir
 $ErrorActionPreference = "Continue"
 
-# Stop any existing instances gracefully
+# Stop any existing instances gracefully (errors are expected if they weren't running)
 pm2 delete grievance-backend  2>&1 | Out-Null
 pm2 delete grievance-frontend 2>&1 | Out-Null
 pm2 delete grievance-monitor  2>&1 | Out-Null   # cleanup old name if present
 
-pm2 start ecosystem.config.cjs 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+Write-Host "    Starting grievance-backend..." -ForegroundColor DarkGray
+Write-Host "    Starting grievance-frontend..." -ForegroundColor DarkGray
+
+# Suppress PM2's box-drawing table output (unreadable on Windows CMD)
+pm2 start ecosystem.config.cjs 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "PM2 failed to start the application." }
+
+# Show a clean readable status instead of PM2's garbled table
+$pm2List = pm2 jlist 2>&1
+try {
+    $pm2Apps = $pm2List | ConvertFrom-Json
+    foreach ($app in $pm2Apps) {
+        $appName   = $app.name
+        $appStatus = $app.pm2_env.status
+        $appPid    = $app.pid
+        if ($appStatus -eq 'online') {
+            Write-Host "    [OK]  $appName  -->  status: $appStatus  (pid: $appPid)" -ForegroundColor Green
+        } else {
+            Write-Host "    [!!]  $appName  -->  status: $appStatus  (pid: $appPid)" -ForegroundColor Red
+        }
+    }
+} catch {
+    Write-Host "    (Could not parse PM2 status list)" -ForegroundColor Yellow
+}
+
 pm2 save 2>&1 | Out-Null
 
 Write-Host "    Configuring PM2 auto-start on Windows boot..." -ForegroundColor DarkGray
