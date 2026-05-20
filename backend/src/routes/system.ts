@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { spawn } from 'child_process';
 import path from 'path';
 import { authenticate, AuthUser } from '../middleware/auth.js';
+import { prisma } from '../config/database.js';
+
 
 export async function systemRoutes(app: FastifyInstance) {
   app.post(
@@ -14,6 +16,27 @@ export async function systemRoutes(app: FastifyInstance) {
       // Basic check: must be admin or developer
       if (user?.role !== 'developer' && user?.role !== 'superadmin' && user?.role !== 'admin') {
         return reply.status(403).send({ error: 'Unauthorized. Admin or Developer access required.' });
+      }
+
+      // Avoid starting a deployment if a background sync is currently running.
+      // This prevents Windows file lock exceptions (dist/ files in use by sync) 
+      // and database transaction lock escalations.
+      try {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const activeSync = await prisma.syncRun.findFirst({
+          where: {
+            status: 'running',
+            startedAt: { gt: oneHourAgo }
+          }
+        });
+
+        if (activeSync) {
+          return reply.status(409).send({
+            error: 'Cannot trigger update. A database synchronization operation is currently active. Please wait for the sync to complete before updating the application code to prevent file/database locks and deployment failure.'
+          });
+        }
+      } catch (dbError: any) {
+        app.log.warn(`Deployment check for active sync failed: ${dbError.message || dbError}. Proceeding anyway.`);
       }
 
       try {
