@@ -101,7 +101,12 @@ const collectComplaintsByRange = async (timeFrom: string, timeTo: string, dType:
   return rows;
 };
 
-const saveNormalizedComplaints = async (rows: NormalizedCctnsComplaint[], lookups: MasterLookups, onProgress?: (pct: number) => void) => {
+const saveNormalizedComplaints = async (
+  rows: NormalizedCctnsComplaint[],
+  lookups: MasterLookups,
+  batchSize: number = 15,
+  onProgress?: (pct: number) => void
+) => {
   let created = 0;
   let updated = 0;
   let errors = 0;
@@ -123,7 +128,7 @@ const saveNormalizedComplaints = async (rows: NormalizedCctnsComplaint[], lookup
   let processedRows = 0;
 
   // Use the pre-loaded lookups for every record — avoids N×3 DB queries
-  await processInBatches(validRows, 50, async (data) => {
+  await processInBatches(validRows, batchSize, async (data) => {
     try {
       const resolved = await resolveMasterIds(data, lookups);
       const mapped = { ...data, ...resolved };
@@ -140,15 +145,16 @@ const saveNormalizedComplaints = async (rows: NormalizedCctnsComplaint[], lookup
       });
       updated++;
     } catch (error: any) {
+      const errMsg = error?.message || String(error);
       // Distinguish between different error types
-      if (error.code === 'P2002') { // Unique constraint violation
+      if (error?.code === 'P2002') { // Unique constraint violation
         console.warn(`⚠️ Duplicate complaint: ${data.complRegNum}`);
         updated++; // Treat as update
-      } else if (error.code === 'P2010') { // Invalid value
-        console.error(`❌ Invalid data for ${data.complRegNum}:`, error.message);
+      } else if (error?.code === 'P2010') { // Invalid value
+        console.error(`❌ Invalid data for ${data.complRegNum}:`, errMsg);
         errors++;
       } else {
-        console.error(`❌ Database error for ${data.complRegNum}:`, error.message);
+        console.error(`❌ Database error for ${data.complRegNum}:`, errMsg);
         errors++;
       }
     }
@@ -207,7 +213,8 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
     });
     job.syncRunId = run.id;
   } catch (error: any) {
-    console.error(`[FETCH-JOB ${jobId}] Failed to create initial sync run record:`, error.message);
+    const errMsg = error?.message || String(error);
+    console.error(`[FETCH-JOB ${jobId}] Failed to create initial sync run record:`, errMsg);
   }
 
   try {
@@ -219,44 +226,101 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
       throw new Error(`Invalid date range: ${timeFrom} to ${timeTo}`);
     }
 
-    job.progress = 'Fetching from CCTNS API...';
-    job.progressPercentage = 0;
-    console.log(`[FETCH-JOB ${jobId}] Fetching from CCTNS API...`);
-    
-    let complaints: CctnsComplaintRow[] = [];
-    try {
-      complaints = await collectComplaintsByRange(timeFrom, timeTo, dType, (pct) => {
-        job.progressPercentage = pct;
-        job.progress = `Fetching from CCTNS API... (${pct}%)`;
-      });
-    } catch (fetchError: any) {
-      console.error(`[FETCH-JOB ${jobId}] CCTNS API fetch failed:`, fetchError.message);
-      throw new Error(`CCTNS API failed: ${fetchError.message}`);
-    }
-    
-    job.progress = `Normalizing ${complaints.length} records...`;
-    console.log(`[FETCH-JOB ${jobId}] Normalizing ${complaints.length} records...`);
-    
-    const normalized = toNormalizedUnique(complaints);
-    
-    // Load master lookups ONCE and save all complaints in a single pass
-    job.progress = `Saving ${normalized.length} records to database...`;
-    console.log(`[FETCH-JOB ${jobId}] Loading master lookups once for batch save...`);
+    // Load master lookups ONCE at the start of the job to maintain efficiency and constant-space usage
+    job.progress = 'Loading master lookups...';
+    job.progressPercentage = 1;
+    console.log(`[FETCH-JOB ${jobId}] Loading master lookups once...`);
     const lookups = await loadAllLookups();
-    console.log(`[FETCH-JOB ${jobId}] Saving ${normalized.length} records to database...`);
-    
-    const { created, updated, errors } = await saveNormalizedComplaints(normalized, lookups, (pct) => {
-      job.progressPercentage = pct;
-      job.progress = `Saving records to database... (${pct}%)`;
-    });
-    
+
+    const WINDOW_DAYS = 3;
+    let cursor = new Date(startDate);
+    const totalDays = Math.max(1, (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24) + 1);
+    let daysProcessed = 0;
+
+    let totalFetched = 0;
+    let totalUnique = 0;
+    let totalCreated = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+
+    while (cursor <= endDate) {
+      const chunkStart = new Date(cursor);
+      const chunkEnd = new Date(cursor);
+      chunkEnd.setDate(chunkEnd.getDate() + WINDOW_DAYS - 1);
+      if (chunkEnd > endDate) {
+        chunkEnd.setTime(endDate.getTime());
+      }
+
+      const chunkStartStr = formatDdMmYyyy(chunkStart);
+      const chunkEndStr = formatDdMmYyyy(chunkEnd);
+
+      // Calculate start percentage of this chunk
+      const startPct = Math.round((daysProcessed / totalDays) * 100);
+      job.progress = `Fetching records for ${chunkStartStr} - ${chunkEndStr}...`;
+      job.progressPercentage = Math.max(1, startPct);
+      console.log(`[FETCH-JOB ${jobId}] Fetching records for ${chunkStartStr} - ${chunkEndStr}...`);
+
+      // Fetch complaints from CCTNS API
+      let chunkRows: CctnsComplaintRow[] = [];
+      try {
+        const result = await fetchCctnsComplaints(chunkStartStr, chunkEndStr, dType);
+        chunkRows = (result as CctnsComplaintRow[]) || [];
+      } catch (fetchError: any) {
+        const errMsg = fetchError?.message || String(fetchError);
+        console.error(`[FETCH-JOB ${jobId}] CCTNS API fetch failed for chunk ${chunkStartStr} - ${chunkEndStr}:`, errMsg);
+        throw new Error(`CCTNS API failed for chunk ${chunkStartStr} - ${chunkEndStr}: ${errMsg}`);
+      }
+
+      totalFetched += chunkRows.length;
+
+      if (chunkRows.length > 0) {
+        // Normalize the rows into unique complaints
+        const chunkNormalized = toNormalizedUnique(chunkRows);
+        totalUnique += chunkNormalized.length;
+
+        // Save normalized rows in small, memory-efficient batches
+        job.progress = `Saving ${chunkNormalized.length} records for ${chunkStartStr} - ${chunkEndStr}...`;
+        console.log(`[FETCH-JOB ${jobId}] Saving ${chunkNormalized.length} records...`);
+
+        const currentChunkDays = (chunkEnd.getTime() - chunkStart.getTime()) / (1000 * 3600 * 24) + 1;
+
+        const { created, updated, errors } = await saveNormalizedComplaints(
+          chunkNormalized,
+          lookups,
+          15, // Reduced batch size (15 instead of 50) for database connection pool safety
+          (pct) => {
+            // Mapping progress linearly between daysProcessed and nextDaysProcessed
+            const savePct = (pct - 80) / 20; // 0 to 1
+            const linearPct = Math.round(((daysProcessed + savePct * currentChunkDays) / totalDays) * 100);
+            job.progressPercentage = Math.min(99, Math.max(1, linearPct));
+          }
+        );
+
+        totalCreated += created;
+        totalUpdated += updated;
+        totalErrors += errors;
+      }
+
+      const currentChunkDays = (chunkEnd.getTime() - chunkStart.getTime()) / (1000 * 3600 * 24) + 1;
+      daysProcessed += currentChunkDays;
+
+      // Update linear progress percentage at the end of the chunk
+      const endPct = Math.round((daysProcessed / totalDays) * 100);
+      job.progressPercentage = Math.min(99, Math.max(1, endPct));
+
+      cursor = new Date(chunkEnd);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
     job.status = 'success';
+    job.progressPercentage = 100;
+    job.progress = `Sync completed! Fetched ${totalFetched} records, created ${totalCreated}, updated ${totalUpdated}, errors: ${totalErrors}.`;
     job.result = {
-      fetched: complaints.length,
-      uniqueComplaints: normalized.length,
-      created,
-      updated,
-      errors,
+      fetched: totalFetched,
+      uniqueComplaints: totalUnique,
+      created: totalCreated,
+      updated: totalUpdated,
+      errors: totalErrors,
     };
     job.completedAt = new Date();
     
@@ -266,12 +330,12 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
     try {
       const data = {
         kind: 'cctns-manual',
-        status: errors > 0 ? 'partial' : 'success',
+        status: totalErrors > 0 ? 'partial' : 'success',
         startedAt: job.startedAt,
         endedAt: job.completedAt,
-        fetchedCount: complaints.length,
-        upsertedCount: created + updated,
-        errorCount: errors,
+        fetchedCount: totalFetched,
+        upsertedCount: totalCreated + totalUpdated,
+        errorCount: totalErrors,
         timeFrom: timeFrom,
         timeTo: timeTo,
         syncType: dType,
@@ -284,8 +348,8 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
         await prisma.syncRun.create({ data });
       }
     } catch (syncRunError: any) {
-      console.error(`[FETCH-JOB ${jobId}] Failed to create sync run record:`, syncRunError.message);
-      // Don't fail the job just because we couldn't create the audit record
+      const errMsg = syncRunError?.message || String(syncRunError);
+      console.error(`[FETCH-JOB ${jobId}] Failed to create sync run record:`, errMsg);
     }
   } catch (error: any) {
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -315,7 +379,8 @@ const runFetchJob = async (jobId: string, timeFrom: string, timeTo: string, dTyp
         await prisma.syncRun.create({ data });
       }
     } catch (syncRunError: any) {
-      console.error(`[FETCH-JOB ${jobId}] Failed to create error sync run record:`, syncRunError.message);
+      const errMsg = syncRunError?.message || String(syncRunError);
+      console.error(`[FETCH-JOB ${jobId}] Failed to create error sync run record:`, errMsg);
     }
   }
 };

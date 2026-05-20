@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $RepoUrl    = "https://github.com/jimmysh2/phq-complaint-dashboard-migrated.git"
 $InstallDir = "C:\PHQ-Dashboard"
+$FrontendPort = "5173"
 
 # Helper functions
 function Write-Step {
@@ -358,25 +359,37 @@ Write-Ok "Admin and master data ready."
 Write-Step "13" "Creating PM2 ecosystem config"
 
 $ecosystemPath = Join-Path $InstallDir "ecosystem.config.cjs"
-$cwd = $InstallDir -replace '\\', '/'
+$cwd           = $InstallDir -replace '\\', '/'
+$frontendCwd   = (Join-Path $InstallDir "frontend") -replace '\\', '/'
 
 $ecosystem = @"
 module.exports = {
   apps: [
     {
-      name        : 'grievance-monitor',
+      name        : 'grievance-backend',
       script      : 'backend/dist/index.js',
       cwd         : '$cwd',
       instances   : 1,
       autorestart : true,
       watch       : false,
-      max_memory_restart: '512M',
       env: {
         NODE_ENV : 'production',
         PORT     : '$AppPort'
       },
-      error_file  : 'logs/err.log',
-      out_file    : 'logs/out.log',
+      error_file  : 'logs/backend-err.log',
+      out_file    : 'logs/backend-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss'
+    },
+    {
+      name        : 'grievance-frontend',
+      script      : 'node_modules/vite/bin/vite.js',
+      args        : 'preview --port $FrontendPort --host 0.0.0.0',
+      cwd         : '$frontendCwd',
+      instances   : 1,
+      autorestart : true,
+      watch       : false,
+      error_file  : '$cwd/logs/frontend-err.log',
+      out_file    : '$cwd/logs/frontend-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss'
     }
   ]
@@ -385,68 +398,144 @@ module.exports = {
 
 $ecosystem | Set-Content -Path $ecosystemPath -Encoding UTF8
 New-Item -ItemType Directory -Force -Path (Join-Path $InstallDir "logs") | Out-Null
-Write-Ok "ecosystem.config.cjs created."
+Write-Ok "ecosystem.config.cjs created (backend + frontend)."
 
 # ── STEP 14: Start with PM2 ───────────────────────────────────────────────────
-Write-Step "14" "Starting app with PM2"
+Write-Step "14" "Starting backend and frontend with PM2"
 
 Set-Location $InstallDir
 $ErrorActionPreference = "Continue"
-pm2 delete grievance-monitor 2>&1 | Out-Null
-$ErrorActionPreference = "Stop"
 
-pm2 start ecosystem.config.cjs
-if ($LASTEXITCODE -ne 0) { Write-Fail "PM2 failed to start the application." }
+# Stop any existing instances gracefully (errors are expected if they weren't running)
+pm2 delete grievance-backend  2>&1 | Out-Null
+pm2 delete grievance-frontend 2>&1 | Out-Null
+pm2 delete grievance-monitor  2>&1 | Out-Null   # cleanup old name if present
+
+Write-Host "    Starting grievance-backend..." -ForegroundColor DarkGray
+Write-Host "    Starting grievance-frontend..." -ForegroundColor DarkGray
+
+# Suppress PM2's box-drawing table output (unreadable on Windows CMD)
+pm2 start ecosystem.config.cjs 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = "Stop"; Write-Fail "PM2 failed to start the application." }
+
+# Show a clean readable status instead of PM2's garbled table
+$pm2List = pm2 jlist 2>&1
+try {
+    $pm2Apps = $pm2List | ConvertFrom-Json
+    foreach ($app in $pm2Apps) {
+        $appName   = $app.name
+        $appStatus = $app.pm2_env.status
+        $appPid    = $app.pid
+        if ($appStatus -eq 'online') {
+            Write-Host "    [OK]  $appName  -->  status: $appStatus  (pid: $appPid)" -ForegroundColor Green
+        } else {
+            Write-Host "    [!!]  $appName  -->  status: $appStatus  (pid: $appPid)" -ForegroundColor Red
+        }
+    }
+} catch {
+    Write-Host "    (Could not parse PM2 status list)" -ForegroundColor Yellow
+}
+
 pm2 save 2>&1 | Out-Null
 
 Write-Host "    Configuring PM2 auto-start on Windows boot..." -ForegroundColor DarkGray
 pm2-startup install 2>&1 | Out-Null
-Write-Ok "PM2 running and boot-persistence configured."
+$ErrorActionPreference = "Stop"
+Write-Ok "PM2 running (both backend and frontend) with boot-persistence."
 
 # ── STEP 15: Health Check ─────────────────────────────────────────────────────
-Write-Step "15" "Health check (waiting 15 seconds for warm-up)"
+Write-Step "15" "Health checks (waiting 15 seconds for warm-up)"
 
 Start-Sleep -Seconds 15
 
-$healthy = $false
+# --- Backend health check ---
+$backendHealthy = $false
 $retries = 5
 while ($retries -gt 0) {
     try {
         $resp = Invoke-WebRequest -Uri "http://localhost:$AppPort/api/health" `
             -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-        if ($resp.StatusCode -eq 200) { $healthy = $true; break }
+        if ($resp.StatusCode -eq 200) { $backendHealthy = $true; break }
     } catch {}
     $retries--
-    Write-Host "    Not ready yet. Retrying ($retries left)..." -ForegroundColor Yellow
+    Write-Host "    Backend not ready yet. Retrying ($retries left)..." -ForegroundColor Yellow
     Start-Sleep -Seconds 8
 }
 
-if (-not $healthy) {
+if (-not $backendHealthy) {
     Write-Host ""
-    Write-Host "  WARNING: Health check did not respond." -ForegroundColor Yellow
-    Write-Host "  Check logs: pm2 logs grievance-monitor" -ForegroundColor Yellow
+    Write-Host "  WARNING: Backend health check did not respond." -ForegroundColor Yellow
+    Write-Host "  Check logs: pm2 logs grievance-backend" -ForegroundColor Yellow
 } else {
-    Write-Ok "Application healthy at http://localhost:$AppPort/api/health"
+    Write-Ok "Backend API is RUNNING at http://localhost:$AppPort/api"
+}
+
+# --- Frontend health check ---
+$frontendHealthy = $false
+$retries2 = 5
+while ($retries2 -gt 0) {
+    try {
+        $resp2 = Invoke-WebRequest -Uri "http://localhost:$FrontendPort" `
+            -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+        if ($resp2.StatusCode -eq 200) { $frontendHealthy = $true; break }
+    } catch {}
+    $retries2--
+    Write-Host "    Frontend not ready yet. Retrying ($retries2 left)..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+}
+
+if (-not $frontendHealthy) {
+    Write-Host ""
+    Write-Host "  WARNING: Frontend did not respond on port $FrontendPort." -ForegroundColor Yellow
+    Write-Host "  Check logs: pm2 logs grievance-frontend" -ForegroundColor Yellow
+} else {
+    Write-Ok "Frontend is RUNNING at http://localhost:$FrontendPort"
 }
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host "         INSTALLATION COMPLETE!                             " -ForegroundColor Green
-Write-Host "============================================================" -ForegroundColor Green
+Write-Host "=================================================================" -ForegroundColor Green
+Write-Host "              INSTALLATION COMPLETE!                            " -ForegroundColor Green
+Write-Host "=================================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Application : Grievance Monitoring System"
-Write-Host "  Department  : Haryana Police Headquarters"
-Write-Host "  URL         : http://localhost:$AppPort"
-Write-Host "  Login       : admin / admin123"
-Write-Host "  Database    : phq_dashboard @ localhost:$DbPort"
-Write-Host "  Folder      : $InstallDir"
+Write-Host "  Application  : Grievance Monitoring System" -ForegroundColor White
+Write-Host "  Department   : Haryana Police Headquarters" -ForegroundColor White
 Write-Host ""
-Write-Host "  Useful commands:"
-Write-Host "    pm2 status                   - check running processes"
-Write-Host "    pm2 logs grievance-monitor   - view live logs"
-Write-Host "    pm2 restart grievance-monitor - restart app"
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host "  |  PORTAL URLs (both are running in the background)      |" -ForegroundColor Cyan
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  |  >> FRONTEND  : http://localhost:$FrontendPort           |" -ForegroundColor Yellow
+Write-Host "  |  >> BACKEND   : http://localhost:$AppPort             |" -ForegroundColor Yellow
+Write-Host "  |  >> API       : http://localhost:$AppPort/api         |" -ForegroundColor Yellow
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  |  Login        : admin / admin123                        |" -ForegroundColor Green
+Write-Host "  |  Database     : phq_dashboard @ localhost:$DbPort       |" -ForegroundColor White
+Write-Host "  |  Install Dir  : $InstallDir                |" -ForegroundColor White
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  NOTE: Both portals run via PM2 in the background." -ForegroundColor DarkGray
+Write-Host "        Closing this window will NOT stop them." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  Useful commands:" -ForegroundColor White
+Write-Host "    pm2 status                      - check all running processes"
+Write-Host "    pm2 logs grievance-backend      - view backend live logs"
+Write-Host "    pm2 logs grievance-frontend     - view frontend live logs"
+Write-Host "    pm2 restart grievance-backend   - restart backend"
+Write-Host "    pm2 restart grievance-frontend  - restart frontend"
 Write-Host ""
 Write-Host "  For future updates run: deploy.bat"
 Write-Host ""
-Read-Host "Press Enter to close"
+Write-Host "  Both portals will automatically restart when Windows reboots." -ForegroundColor DarkGray
+Write-Host ""
+
+# ── Keep window open until user is ready ─────────────────────────────────────
+# PM2 manages both processes independently; pressing a key here only
+# closes this installer window - the portals keep running.
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host "  Press any key to close this installer window.                  " -ForegroundColor Magenta
+Write-Host "  (The backend and frontend portals will keep running.)          " -ForegroundColor Magenta
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host ""
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
