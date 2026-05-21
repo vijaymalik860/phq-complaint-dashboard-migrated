@@ -40,15 +40,20 @@ export async function systemRoutes(app: FastifyInstance) {
       }
 
       try {
-        // Spawn deploy.bat directly via cmd.exe in a detached process
-        // This matches the Court Portal reference deployment structure on this server.
-        const scriptPath = path.resolve(process.cwd(), '../deploy.bat');
-        
+        // deploy.bat lives in the project ROOT (same folder as process.cwd()
+        // because PM2 sets cwd to the project root via ecosystem.config.cjs).
+        // Previously this was '../deploy.bat' which resolved ONE level UP — wrong!
+        const projectRoot = process.cwd();
+        const scriptPath = path.join(projectRoot, 'deploy.bat');
+
+        app.log.info(`Triggering deployment script: ${scriptPath} (cwd: ${projectRoot})`);
+
         const child = spawn('cmd.exe', ['/c', scriptPath], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
+          cwd: projectRoot,   // ensure all relative paths inside deploy.bat resolve correctly
         });
-        
+
         child.unref();
 
         return { message: 'Deployment triggered successfully! Server is pulling code and will restart shortly.' };
