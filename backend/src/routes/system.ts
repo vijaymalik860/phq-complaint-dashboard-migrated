@@ -111,4 +111,34 @@ export async function systemRoutes(app: FastifyInstance) {
       }
     }
   );
+
+  // ── GET /api/system/deploy-info ──────────────────────────────────────────────
+  // Diagnostic endpoint — visit this from the VM browser to verify paths.
+  // URL: http://localhost:3001/api/system/deploy-info  (use your actual port)
+  // ─────────────────────────────────────────────────────────────────────────────
+  app.get(
+    '/system/deploy-info',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const user = request.user as AuthUser;
+      if (user?.role !== 'developer' && user?.role !== 'superadmin' && user?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Unauthorized.' });
+      }
+
+      const projectRoot  = process.cwd();
+      const scriptPath   = path.join(projectRoot, 'deploy.bat');
+      const logPath      = path.join(projectRoot, 'logs', 'deploy.log');
+
+      return {
+        projectRoot,
+        deployBatPath:    scriptPath,
+        deployBatExists:  fs.existsSync(scriptPath),
+        deployLogPath:    logPath,
+        deployLogExists:  fs.existsSync(logPath),
+        nodeVersion:      process.version,
+        platform:         process.platform,
+      };
+    }
+  );
 }
+
