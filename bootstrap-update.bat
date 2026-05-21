@@ -124,16 +124,23 @@ if errorlevel 1 (
     echo.
 )
 
-REM ── STEP 4: Restart backend via PM2 ──────────────────────────────────────────
-echo [4/4] Restarting backend with new code...
+REM ── STEP 4: Restart both backend and frontend via PM2 ───────────────────────
+echo [4/4] Restarting backend and frontend with new code...
 call pm2 restart grievance-backend
 if errorlevel 1 (
-    echo  [WARN] pm2 restart returned an error.
+    echo  [WARN] pm2 restart grievance-backend returned an error.
     echo         Try manually: pm2 restart grievance-backend
 ) else (
-    call pm2 save >nul 2>&1
     echo  [OK]  Backend restarted.
 )
+call pm2 restart grievance-frontend
+if errorlevel 1 (
+    echo  [WARN] pm2 restart grievance-frontend returned an error.
+    echo         Try manually: pm2 restart grievance-frontend
+) else (
+    echo  [OK]  Frontend restarted.
+)
+call pm2 save >nul 2>&1
 echo.
 
 REM ── Done ──────────────────────────────────────────────────────────────────────
