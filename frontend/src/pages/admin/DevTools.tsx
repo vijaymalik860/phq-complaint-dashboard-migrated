@@ -27,7 +27,7 @@ const DevTools = () => {
 
       <div className="metrics-grid" style={{ marginTop: '24px', gridTemplateColumns: '1fr' }}>
         <div className="metric-card" style={{ padding: '24px', background: 'rgba(30, 41, 59, 0.7)' }}>
-          <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '16px' }}>System Update</h2>
+          <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', marginBottom: '16px' }}>Click Here For System Update</h2>
           <p style={{ color: '#94a3b8', marginBottom: '24px', lineHeight: '1.6' }}>
             Trigger a manual deployment of the latest code from the GitHub repository. 
             This process will automatically fetch the latest main branch, rebuild the frontend and backend, 
