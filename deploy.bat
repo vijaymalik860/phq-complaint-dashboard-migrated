@@ -29,7 +29,8 @@ if exist "backend\.env" (
         if "%%A"=="PORT" set APP_PORT=%%B
     )
 )
-echo  OK - App port detected as !APP_PORT!
+set "APP_PORT=%APP_PORT:"=%"
+echo  OK - App port detected as %APP_PORT%
 
 REM ── 2. Backup current build for rollback ─────────────────
 echo.
@@ -123,11 +124,23 @@ ping 127.0.0.1 -n 16 >nul
 
 set RETRIES=5
 :health_loop
-if !RETRIES! == 0 goto :health_failed
-curl -sf http://localhost:!APP_PORT!/api/health >nul 2>&1
+if "%RETRIES%"=="0" goto :health_failed
+
+rem Try the detected APP_PORT first
+curl -sf http://localhost:%APP_PORT%/api/health >nul 2>&1
 if not errorlevel 1 goto :health_done
-set /a RETRIES=!RETRIES!-1
-echo  ... Not ready. Retrying (!RETRIES! left)
+
+rem If APP_PORT is not 3001, also try port 3001 as a backup fallback
+if not "%APP_PORT%"=="3001" (
+    curl -sf http://localhost:3001/api/health >nul 2>&1
+    if not errorlevel 1 (
+        set "APP_PORT=3001"
+        goto :health_done
+    )
+)
+
+set /a RETRIES=RETRIES-1
+echo  ... Not ready. Retrying (%RETRIES% left)
 ping 127.0.0.1 -n 9 >nul
 goto :health_loop
 
@@ -144,7 +157,7 @@ echo  ================================================
 echo    Deployment SUCCESSFUL!
 echo  ================================================
 echo.
-echo   Portal: http://localhost:!APP_PORT!/api/health
+echo   Portal: http://localhost:%APP_PORT%/api/health
 echo.
 exit /b 0
 
@@ -169,7 +182,12 @@ if exist "_backup\backend_dist" xcopy /e /q /i _backup\backend_dist backend\dist
 echo  Restarting with previous build...
 call pm2 restart grievance-backend grievance-frontend
 ping 127.0.0.1 -n 11 >nul
-curl -sf http://localhost:!APP_PORT!/api/health >nul 2>&1
+curl -sf http://localhost:%APP_PORT%/api/health >nul 2>&1
+if errorlevel 1 (
+    if not "%APP_PORT%"=="3001" (
+        curl -sf http://localhost:3001/api/health >nul 2>&1
+    )
+)
 if errorlevel 1 (
     echo  CRITICAL: Rollback also failed! Run: pm2 logs
 ) else (

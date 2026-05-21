@@ -81,8 +81,9 @@ if (process.env.VERCEL !== '1') {
     try {
       // Removed startCctnsBackgroundSync() to prevent massive data transfer on cold starts.
       // Syncs should rely on the Vercel Cron endpoint instead of server startup hooks.
-      await app.listen({ port: 3001, host: '0.0.0.0' });
-      console.log('✅ Server running on port 3001');
+      const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+      await app.listen({ port, host: '0.0.0.0' });
+      console.log(`✅ Server running on port ${port}`);
     } catch (err) {
       app.log.error(err);
       process.exit(1);
