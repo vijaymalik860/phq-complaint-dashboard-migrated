@@ -65,6 +65,15 @@ if errorlevel 1 (
 echo  [OK]  Code updated to latest commit.
 echo.
 
+REM ── STEP 1b: Stop PM2 to release file locks (Prisma DLL, dist files) ─────────
+echo [1b] Stopping PM2 to release file locks before rebuild...
+call pm2 stop grievance-backend >nul 2>&1
+call pm2 stop grievance-frontend >nul 2>&1
+REM Give Node.js a moment to fully release all file handles
+ping 127.0.0.1 -n 4 >nul
+echo  [OK]  PM2 stopped. File locks released.
+echo.
+
 REM ── STEP 2: Rebuild backend only ──────────────────────────────────────────────
 echo [2/4] Rebuilding backend...
 cd "%ROOT%\backend"
@@ -74,17 +83,28 @@ call npm install --prefer-offline --loglevel=error
 if errorlevel 1 (
     cd "%ROOT%"
     echo  [FAIL] Backend npm install failed.
+    call pm2 restart grievance-backend >nul 2>&1
+    call pm2 restart grievance-frontend >nul 2>&1
     pause & exit /b 1
 )
 
 echo   Generating Prisma client...
-call npx prisma generate >nul 2>&1
+call npx prisma generate
+if errorlevel 1 (
+    cd "%ROOT%"
+    echo  [FAIL] Prisma generate failed.
+    call pm2 restart grievance-backend >nul 2>&1
+    call pm2 restart grievance-frontend >nul 2>&1
+    pause & exit /b 1
+)
 
 echo   Compiling TypeScript...
 call npm run build
 if errorlevel 1 (
     cd "%ROOT%"
     echo  [FAIL] Backend TypeScript build failed.
+    call pm2 restart grievance-backend >nul 2>&1
+    call pm2 restart grievance-frontend >nul 2>&1
     pause & exit /b 1
 )
 cd "%ROOT%"
