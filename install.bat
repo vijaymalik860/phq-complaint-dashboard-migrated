@@ -649,4 +649,21 @@ Write-Host ""
 Write-Host "  Useful commands:" -ForegroundColor White
 Write-Host "    pm2 status                      - check all running processes"
 Write-Host "    pm2 logs grievance-backend      - view backend live logs"
-Write-Host "    pm2 logs grievanc
+Write-Host "    pm2 logs grievance-frontend     - view frontend live logs"
+Write-Host "    pm2 restart grievance-backend   - restart backend"
+Write-Host "    pm2 restart grievance-frontend  - restart frontend"
+Write-Host ""
+Write-Host "  For future updates run: deploy.bat"
+Write-Host ""
+Write-Host "  Both portals will automatically restart when Windows reboots." -ForegroundColor DarkGray
+Write-Host ""
+
+# ── Keep window open until user is ready ─────────────────────────────────────
+# PM2 manages both processes independently; pressing a key here only
+# closes this installer window - the portals keep running.
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host "  Press any key to close this installer window.                  " -ForegroundColor Magenta
+Write-Host "  (The backend and frontend portals will keep running.)          " -ForegroundColor Magenta
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host ""
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

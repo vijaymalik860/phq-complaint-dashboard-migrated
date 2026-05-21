@@ -190,4 +190,19 @@ call :log STEP "--- ROLLBACK DONE ---"
 call :log STEP "=== DEPLOY FAILED - ROLLED BACK ==="
 exit /b 1
 
-REM ── :log subroutine ───────────────────────────────────────────────�
+REM ── :log subroutine ───────────────────────────────────────────────────────────
+REM  Uses only native batch variables (%DATE%, %TIME%) — no PowerShell call.
+REM  This works correctly in any execution context including SYSTEM account
+REM  scheduled tasks where nested PowerShell calls may be restricted.
+:log
+REM  Build timestamp from %DATE% (locale-independent: strip day-name prefix if present)
+set "_d=%DATE%"
+REM  If DATE starts with day-name (e.g. "Thu 05/21/2026"), strip it
+if "%_d:~3,1%"==" " set "_d=%_d:~4%"
+REM  Time: strip leading space on single-digit hours
+set "_t=%TIME: =0%"
+set "_logts=%_d% %_t:~0,8%"
+set "_logline=%_logts%  [%~1] %~2"
+echo %_logline%
+echo %_logline% >> "%LOG_FILE%"
+exit /b 0

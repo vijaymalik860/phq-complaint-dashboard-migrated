@@ -113,4 +113,17 @@ const DevTools = () => {
         </button>
 
         {status === 'done' && (
-          <div style={{ marginTop: '16px', padding: '12px 16px', background: 
+          <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '7px', color: '#86efac', fontSize: '14px' }}>
+            ✅ Deployment complete. <strong>Press Ctrl+Shift+R</strong> (hard refresh) to load the latest version.
+          </div>
+        )}
+      </div>
+
+
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </Layout>
+  );
+};
+
+export default DevTools;
