@@ -114,36 +114,7 @@ const DevTools = () => {
         )}
       </div>
 
-      {/* ── Deploy Log ── */}
-      <div style={{ marginTop: '16px', padding: '24px', background: 'rgba(30,41,59,0.8)', borderRadius: '10px', border: '1px solid rgba(100,116,139,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div>
-            <span style={{ fontSize: '1rem', color: '#f8fafc', fontWeight: 600 }}>Deployment Log</span>
-            {logUpdatedAt && (
-              <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '12px' }}>
-                Last updated: {new Date(logUpdatedAt).toLocaleString()}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={fetchLog}
-            disabled={logLoading}
-            style={{ padding: '6px 14px', background: 'rgba(100,116,139,0.2)', border: '1px solid rgba(100,116,139,0.3)', borderRadius: '5px', color: '#94a3b8', fontSize: '13px', cursor: logLoading ? 'not-allowed' : 'pointer' }}
-          >
-            {logLoading ? 'Loading...' : '↻ Refresh Log'}
-          </button>
-        </div>
 
-        <pre style={{
-          background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(100,116,139,0.15)',
-          borderRadius: '6px', padding: '16px', color: '#a3e635',
-          fontSize: '12px', fontFamily: 'Consolas, monospace',
-          maxHeight: '500px', overflowY: 'auto',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
-        }}>
-          {log || '(No log yet — click the button above, wait ~2 minutes, then click "↻ Refresh Log")'}
-        </pre>
-      </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </Layout>
