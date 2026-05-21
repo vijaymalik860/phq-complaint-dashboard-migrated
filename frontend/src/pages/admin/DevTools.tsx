@@ -45,7 +45,12 @@ const DevTools = () => {
       setTimeout(() => { fetchLog(); setStatus('done'); }, 90000);
     } catch (err: any) {
       const msg = err.response?.data?.error || err.message || 'Failed to trigger deployment.';
-      window.alert('Error: ' + msg);
+      // Give a clear hint if the scheduled task hasn't been created yet
+      const isTaskMissing = msg.includes('schtasks') || msg.includes('PHQDeploy') || msg.includes('scheduled task');
+      const displayMsg = isTaskMissing
+        ? `${msg}\n\nFIX: On the server VM, right-click "bootstrap-update.bat" and choose "Run as administrator". This is a one-time setup step.`
+        : msg;
+      window.alert('Deployment Error:\n\n' + displayMsg);
       setLog('');
       setStatus('idle');
     } finally {
@@ -108,17 +113,4 @@ const DevTools = () => {
         </button>
 
         {status === 'done' && (
-          <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '7px', color: '#86efac', fontSize: '14px' }}>
-            ✅ Deployment complete. <strong>Press Ctrl+Shift+R</strong> (hard refresh) to load the latest version.
-          </div>
-        )}
-      </div>
-
-
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </Layout>
-  );
-};
-
-export default DevTools;
+          <div style={{ marginTop: '16px', padding: '12px 16px', background: 

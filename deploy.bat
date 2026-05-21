@@ -4,8 +4,14 @@ title Grievance Monitoring System - Deploy Update
 
 REM ============================================================
 REM  Grievance Monitoring System - Deploy / Update Script
-REM  Run from project root. Works both interactively and when
-REM  triggered by the UI button via PowerShell Start-Process.
+REM  Run from project root OR triggered via Windows Scheduled
+REM  Task "PHQDeploy" (schtasks /run /tn PHQDeploy).
+REM
+REM  WHY Scheduled Task?
+REM  When triggered from Node.js/PM2, child processes share the
+REM  same Windows Job Object.  "pm2 stop" kills the Job Object
+REM  and terminates this script mid-run.  A Scheduled Task runs
+REM  in Session 0 (SYSTEM), outside any Job Object.
 REM
 REM  Writes a structured timestamped log to:  logs\deploy.log
 REM  UI reads this log via GET /api/system/deploy-log
@@ -184,10 +190,4 @@ call :log STEP "--- ROLLBACK DONE ---"
 call :log STEP "=== DEPLOY FAILED - ROLLED BACK ==="
 exit /b 1
 
-REM ── :log subroutine ───────────────────────────────────────────────────────────
-:log
-for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"`) do set "_logts=%%T"
-set "_logline=%_logts%  [%~1] %~2"
-echo %_logline%
-echo %_logline% >> "%LOG_FILE%"
-exit /b 0
+REM ── :log subroutine ───────────────────────────────────────────────�

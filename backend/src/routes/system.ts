@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { spawn } from 'child_process';
+import { spawn, execFile } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { authenticate, AuthUser } from '../middleware/auth.js';
@@ -18,6 +18,57 @@ function getProjectRoot(): string {
     dir = parent;
   }
   return process.cwd(); // fallback
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  triggerDeployViaScheduledTask
+//
+//  WHY scheduled task instead of spawn/PowerShell?
+//  ─────────────────────────────────────────────────
+//  When PM2 starts Node.js on Windows, every child process it spawns is
+//  automatically placed inside the same Windows Job Object as PM2/Node.
+//  When deploy.bat runs "pm2 stop grievance-backend", PM2 tears down
+//  Node.js — and Windows immediately kills ALL processes in the same Job
+//  Object, including deploy.bat itself.  The script self-destructs mid-run.
+//
+//  A Scheduled Task runs in Session 0 under the SYSTEM account, which is
+//  completely outside any Job Object.  It survives PM2 restart and runs
+//  the full deploy pipeline independently.
+//
+//  The task "PHQDeploy" is registered once by:
+//    scripts\create-deploy-task.ps1   (called by bootstrap-update.bat / install.bat)
+// ─────────────────────────────────────────────────────────────────────────────
+function triggerDeployViaScheduledTask(log: (msg: string) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    log('[deploy] Triggering via schtasks /run /tn PHQDeploy ...');
+
+    // schtasks /run is a fire-and-forget command: it returns immediately
+    // after handing off to the Task Scheduler service.
+    const child = spawn('schtasks', ['/run', '/tn', 'PHQDeploy', '/f'], {
+      detached:    true,
+      stdio:       'ignore',
+      windowsHide: true,
+    });
+
+    child.on('error', (err) => {
+      reject(new Error(`schtasks spawn error: ${err.message}`));
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        log('[deploy] schtasks returned 0 — PHQDeploy task is now running.');
+        resolve();
+      } else {
+        reject(new Error(
+          `schtasks exited with code ${code}. ` +
+          `Ensure the PHQDeploy scheduled task was created by running ` +
+          `bootstrap-update.bat (or scripts\\create-deploy-task.ps1) as Administrator.`
+        ));
+      }
+    });
+
+    child.unref();
+  });
 }
 
 export async function systemRoutes(app: FastifyInstance) {
@@ -59,37 +110,10 @@ export async function systemRoutes(app: FastifyInstance) {
           return reply.status(500).send({ error: `deploy.bat not found at: ${scriptPath}` });
         }
 
-        // Use PowerShell Start-Process to launch deploy.bat as a FULLY DETACHED
-        // process outside the parent Node.js Job Object so it survives PM2 restart.
-        //
-        // IMPORTANT: Use single quotes (') for paths to prevent PowerShell from
-        // stripping double quotes when parsing the -Command string, which fails
-        // on paths with spaces (e.g. "Harshit Sir Work").
-        const psCmd = [
-          'Start-Process',
-          '-FilePath',        `'${scriptPath}'`,
-          '-WorkingDirectory', `'${projectRoot}'`,
-          '-WindowStyle',     'Hidden',
-        ].join(' ');
-
-        app.log.info(`[deploy] Executing PowerShell Command: ${psCmd}`);
-
-        const child = spawn('powershell.exe', [
-          '-NoProfile',
-          '-NonInteractive',
-          '-ExecutionPolicy', 'Bypass',
-          '-WindowStyle', 'Hidden',
-          '-Command', psCmd,
-        ], {
-          detached: true,
-          stdio:    'ignore',
-        });
-
-        child.on('error', (err) => {
-          app.log.error(`[deploy] PowerShell spawn error: ${err.message}`);
-        });
-
-        child.unref();
+        // Trigger deploy via Windows Scheduled Task (PHQDeploy).
+        // See triggerDeployViaScheduledTask() above for the full explanation
+        // of WHY we use schtasks instead of spawn/PowerShell.
+        await triggerDeployViaScheduledTask((msg) => app.log.info(msg));
 
         return { message: 'Deployment triggered! Server is now pulling the latest code and will restart in ~2 minutes. Refresh the log below to monitor progress.' };
 
@@ -120,42 +144,4 @@ export async function systemRoutes(app: FastifyInstance) {
       try {
         const content = fs.readFileSync(logPath, 'utf-8');
         const lines   = content.split('\n');
-        const last150 = lines.slice(-150).join('\n');
-        const stat    = fs.statSync(logPath);
-        return { log: last150, updatedAt: stat.mtime };
-      } catch (err: any) {
-        return reply.status(500).send({ error: `Could not read log: ${err.message}` });
-      }
-    }
-  );
-
-  // ── GET /api/system/deploy-info ──────────────────────────────────────────────
-  // Diagnostic endpoint — visit this from the VM browser to verify paths.
-  // URL: http://localhost:3001/api/system/deploy-info  (use your actual port)
-  // ─────────────────────────────────────────────────────────────────────────────
-  app.get(
-    '/system/deploy-info',
-    { preHandler: [authenticate] },
-    async (request, reply) => {
-      const user = request.user as AuthUser;
-      if (user?.role !== 'developer' && user?.role !== 'superadmin' && user?.role !== 'admin') {
-        return reply.status(403).send({ error: 'Unauthorized.' });
-      }
-
-      const projectRoot  = getProjectRoot();
-      const scriptPath   = path.join(projectRoot, 'deploy.bat');
-      const logPath      = path.join(projectRoot, 'logs', 'deploy.log');
-
-      return {
-        projectRoot,
-        deployBatPath:    scriptPath,
-        deployBatExists:  fs.existsSync(scriptPath),
-        deployLogPath:    logPath,
-        deployLogExists:  fs.existsSync(logPath),
-        nodeVersion:      process.version,
-        platform:         process.platform,
-      };
-    }
-  );
-}
-
+        const last150 = lines.slice(-150).join('\n'

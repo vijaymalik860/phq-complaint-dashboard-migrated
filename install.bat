@@ -552,8 +552,27 @@ pm2-startup install 2>&1 | Out-Null
 $ErrorActionPreference = "Stop"
 Write-Ok "PM2 running (both backend and frontend) with boot-persistence."
 
-# ── STEP 15: Health Check ─────────────────────────────────────────────────────
-Write-Step "15" "Health checks (waiting 15 seconds for warm-up)"
+# ── STEP 15: Register PHQDeploy Scheduled Task ───────────────────────────────
+Write-Step "15" "Registering PHQDeploy Windows Scheduled Task (enables UI Update button)"
+
+$createTaskScript = Join-Path $InstallDir "scripts\create-deploy-task.ps1"
+if (Test-Path $createTaskScript) {
+    $ErrorActionPreference = "Continue"
+    & $createTaskScript -InstallDir $InstallDir 2>&1 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+    if ($LASTEXITCODE -eq 0) {
+        Write-Ok "PHQDeploy scheduled task registered. UI Update button is ready."
+    } else {
+        Write-Host "  WARNING: Scheduled task setup returned an error." -ForegroundColor Yellow
+        Write-Host "           The app will still run. To fix the Update button later, run:" -ForegroundColor Yellow
+        Write-Host "           powershell -ExecutionPolicy Bypass -File scripts\create-deploy-task.ps1" -ForegroundColor Yellow
+    }
+    $ErrorActionPreference = "Stop"
+} else {
+    Write-Host "  WARNING: scripts\create-deploy-task.ps1 not found. Skipping task setup." -ForegroundColor Yellow
+}
+
+# ── STEP 16: Health Check ─────────────────────────────────────────────────────
+Write-Step "16" "Health checks (waiting 15 seconds for warm-up)"
 
 Start-Sleep -Seconds 15
 
@@ -630,21 +649,4 @@ Write-Host ""
 Write-Host "  Useful commands:" -ForegroundColor White
 Write-Host "    pm2 status                      - check all running processes"
 Write-Host "    pm2 logs grievance-backend      - view backend live logs"
-Write-Host "    pm2 logs grievance-frontend     - view frontend live logs"
-Write-Host "    pm2 restart grievance-backend   - restart backend"
-Write-Host "    pm2 restart grievance-frontend  - restart frontend"
-Write-Host ""
-Write-Host "  For future updates run: deploy.bat"
-Write-Host ""
-Write-Host "  Both portals will automatically restart when Windows reboots." -ForegroundColor DarkGray
-Write-Host ""
-
-# ── Keep window open until user is ready ─────────────────────────────────────
-# PM2 manages both processes independently; pressing a key here only
-# closes this installer window - the portals keep running.
-Write-Host "=================================================================" -ForegroundColor Magenta
-Write-Host "  Press any key to close this installer window.                  " -ForegroundColor Magenta
-Write-Host "  (The backend and frontend portals will keep running.)          " -ForegroundColor Magenta
-Write-Host "=================================================================" -ForegroundColor Magenta
-Write-Host ""
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Write-Host "    pm2 logs grievanc
