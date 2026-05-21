@@ -45,7 +45,7 @@ export async function systemRoutes(app: FastifyInstance) {
         // If spawned via standard spawn, Windows automatically kills the child deploy.bat process as well.
         // Start-Process launches a completely independent, detached process.
         const scriptPath = path.resolve(process.cwd(), '../deploy.bat');
-        const psCommand = `Start-Process cmd.exe -ArgumentList '/c ""${scriptPath}"" --background' -WindowStyle Hidden`;
+        const psCommand = `Start-Process -FilePath "${scriptPath}" -ArgumentList "--background" -WindowStyle Hidden`;
         
         const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psCommand], {
           detached: true,
