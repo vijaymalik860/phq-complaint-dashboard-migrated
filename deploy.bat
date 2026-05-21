@@ -1,6 +1,12 @@
 <# :
 @echo off
 setlocal disabledelayedexpansion
+
+if "%~1"=="--background" (
+    set DEPLOY_NO_ELEVATION=true
+    set DEPLOY_BACKGROUND=true
+)
+
 title Grievance Monitoring System - Deploy Update
 color 0B
 
