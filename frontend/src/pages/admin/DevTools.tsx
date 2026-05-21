@@ -2,23 +2,12 @@ import { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import api from '../../services/api';
 
-interface DeployInfo {
-  projectRoot: string;
-  deployBatPath: string;
-  deployBatExists: boolean;
-  deployLogPath: string;
-  deployLogExists: boolean;
-  nodeVersion: string;
-  platform: string;
-}
-
 const DevTools = () => {
   const [loading, setLoading]           = useState(false);
   const [log, setLog]                   = useState<string>('');
   const [logUpdatedAt, setLogUpdatedAt] = useState<string | null>(null);
   const [logLoading, setLogLoading]     = useState(false);
-  const [info, setInfo]                 = useState<DeployInfo | null>(null);
-  const [infoError, setInfoError]       = useState<string>('');
+  const [status, setStatus]             = useState<'idle' | 'triggered' | 'done'>('idle');
 
   const fetchLog = async () => {
     setLogLoading(true);
@@ -30,124 +19,68 @@ const DevTools = () => {
     finally { setLogLoading(false); }
   };
 
-  const fetchInfo = async () => {
-    try {
-      const res = await api.get('/api/system/deploy-info');
-      setInfo(res.data);
-      setInfoError('');
-    } catch (err: any) {
-      setInfoError(err.response?.data?.error || err.message || 'Failed to fetch info');
-    }
-  };
-
-  useEffect(() => {
-    fetchLog();
-    fetchInfo();
-  }, []);
+  useEffect(() => { fetchLog(); }, []);
 
   const handleDeployUpdate = async () => {
-    if (!window.confirm('Trigger a deployment? This will pull the latest code from GitHub, rebuild, and restart the server. The page will become unavailable for ~2 minutes.')) return;
+    if (!window.confirm(
+      'This will pull the latest code from GitHub, rebuild the application, and restart the server.\n\n' +
+      'The app will be unavailable for ~2 minutes.\n\nProceed?'
+    )) return;
 
     setLoading(true);
-    setLog('⏳ Deployment triggered. Waiting for log output (this takes ~2 minutes)...');
+    setStatus('triggered');
+    setLog('⏳ Deployment triggered. Please wait ~2 minutes, then click "Refresh Log"...');
+
     try {
-      const response = await api.post('/api/system/trigger-deployment');
-      window.alert(response.data.message || 'Deployment triggered!');
-      // Auto-refresh log after 30s and again after 90s
+      await api.post('/api/system/trigger-deployment');
+      // Auto-refresh log after 30s, 60s, 90s
       setTimeout(() => fetchLog(), 30000);
-      setTimeout(() => fetchLog(), 90000);
+      setTimeout(() => fetchLog(), 60000);
+      setTimeout(() => { fetchLog(); setStatus('done'); }, 90000);
     } catch (err: any) {
-      window.alert(err.response?.data?.error || err.message || 'Failed to trigger deployment.');
+      const msg = err.response?.data?.error || err.message || 'Failed to trigger deployment.';
+      window.alert('Error: ' + msg);
       setLog('');
+      setStatus('idle');
     } finally {
       setLoading(false);
     }
   };
 
-  const cardStyle: React.CSSProperties = {
-    padding: '20px 24px',
-    background: 'rgba(30, 41, 59, 0.7)',
-    borderRadius: '8px',
-    marginBottom: '16px',
-    border: '1px solid rgba(100,116,139,0.15)',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#64748b',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    marginBottom: '2px',
-  };
-
-  const valueStyle: React.CSSProperties = {
-    fontFamily: 'Consolas, monospace',
-    fontSize: '13px',
-    color: '#e2e8f0',
-    wordBreak: 'break-all',
-  };
-
   return (
     <Layout>
       <div className="module-header">
-        <h1 className="module-title" style={{ color: '#e2e8f0' }}>Developer Tools</h1>
-      </div>
-
-      {/* ── Diagnostic Card ── */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1rem', color: '#f8fafc', margin: 0 }}>🔍 Path Diagnostics (Live from Server)</h2>
-          <button onClick={fetchInfo} style={{ padding: '5px 12px', background: 'rgba(100,116,139,0.2)', border: '1px solid rgba(100,116,139,0.3)', borderRadius: '5px', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}>
-            ↻ Refresh
-          </button>
-        </div>
-
-        {infoError && (
-          <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#fca5a5', fontSize: '13px', marginBottom: '12px' }}>
-            ⚠️ Could not fetch info: {infoError}
-          </div>
-        )}
-
-        {info ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            {[
-              { label: 'process.cwd() — Project Root', value: info.projectRoot },
-              { label: 'deploy.bat path', value: info.deployBatPath },
-              { label: 'deploy.bat EXISTS on disk?', value: info.deployBatExists ? '✅ YES — file found' : '❌ NO — FILE MISSING!', color: info.deployBatExists ? '#86efac' : '#fca5a5' },
-              { label: 'deploy.log path', value: info.deployLogPath },
-              { label: 'deploy.log EXISTS?', value: info.deployLogExists ? '✅ YES' : '⚪ Not yet', color: info.deployLogExists ? '#86efac' : '#94a3b8' },
-              { label: 'Node.js version', value: info.nodeVersion },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '6px', padding: '10px 14px' }}>
-                <div style={labelStyle}>{label}</div>
-                <div style={{ ...valueStyle, color: color || '#e2e8f0' }}>{value}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          !infoError && <div style={{ color: '#64748b', fontSize: '13px' }}>Loading...</div>
-        )}
+        <h1 className="module-title" style={{ color: '#e2e8f0' }}>Developer Tools — System Update</h1>
       </div>
 
       {/* ── Update Card ── */}
-      <div style={cardStyle}>
-        <h2 style={{ fontSize: '1.1rem', color: '#f8fafc', marginBottom: '8px' }}>System Update</h2>
-        <p style={{ color: '#94a3b8', marginBottom: '20px', lineHeight: '1.6', fontSize: '14px' }}>
-          Triggers deployment of the latest code from GitHub. Pulls <code>main</code>,
-          rebuilds frontend + backend, applies DB migrations, and restarts PM2.
-          Auto-rolls back if health check fails.
-        </p>
+      <div style={{ marginTop: '24px', padding: '28px', background: 'rgba(30,41,59,0.8)', borderRadius: '10px', border: '1px solid rgba(100,116,139,0.2)' }}>
+
+        <div style={{ marginBottom: '20px' }}>
+          <p style={{ color: '#94a3b8', lineHeight: '1.7', fontSize: '14px', margin: 0 }}>
+            Clicking the button below will:
+          </p>
+          <ol style={{ color: '#94a3b8', lineHeight: '1.9', fontSize: '14px', marginTop: '8px', paddingLeft: '20px' }}>
+            <li>Pull the latest code from GitHub <code>main</code> branch</li>
+            <li>Rebuild the frontend and backend</li>
+            <li>Apply any database schema changes</li>
+            <li>Restart the server via PM2</li>
+            <li>Run a health check — auto-rollback if it fails</li>
+          </ol>
+          <p style={{ color: '#f59e0b', fontSize: '13px', marginTop: '12px', marginBottom: 0 }}>
+            ⚠️ The app will be unavailable for ~2 minutes. After it restarts, do a <strong>hard refresh</strong> (Ctrl+Shift+R) to see the latest changes.
+          </p>
+        </div>
 
         <button
           id="btn-trigger-deployment"
           onClick={handleDeployUpdate}
           disabled={loading}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '12px 24px',
-            background: loading ? 'rgba(59,130,246,0.5)' : '#3b82f6',
-            border: 'none', borderRadius: '6px', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', gap: '10px',
+            padding: '13px 28px',
+            background: loading ? 'rgba(59,130,246,0.4)' : '#3b82f6',
+            border: 'none', borderRadius: '7px', color: '#fff',
             fontSize: '15px', fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'background 0.2s',
@@ -156,39 +89,50 @@ const DevTools = () => {
           onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#3b82f6'; }}
         >
           {loading ? (
-            <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+            <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block', flexShrink: 0 }} />
           ) : (
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ flexShrink: 0 }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           )}
-          {loading ? 'Triggering Update...' : 'Click Here to Update Application-Code'}
+          {loading ? 'Deployment Running...' : 'Click Here to Update Application Code'}
         </button>
+
+        {status === 'done' && (
+          <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '7px', color: '#86efac', fontSize: '14px' }}>
+            ✅ Deployment complete. <strong>Press Ctrl+Shift+R</strong> (hard refresh) to load the latest version.
+          </div>
+        )}
       </div>
 
-      {/* ── Deploy Log Card ── */}
-      <div style={cardStyle}>
+      {/* ── Deploy Log ── */}
+      <div style={{ marginTop: '16px', padding: '24px', background: 'rgba(30,41,59,0.8)', borderRadius: '10px', border: '1px solid rgba(100,116,139,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '1rem', color: '#f8fafc', margin: 0 }}>
-            Deploy Log
+          <div>
+            <span style={{ fontSize: '1rem', color: '#f8fafc', fontWeight: 600 }}>Deployment Log</span>
             {logUpdatedAt && (
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400, marginLeft: '12px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '12px' }}>
                 Last updated: {new Date(logUpdatedAt).toLocaleString()}
               </span>
             )}
-          </h2>
-          <button onClick={fetchLog} disabled={logLoading} style={{ padding: '6px 14px', background: logLoading ? 'rgba(100,116,139,0.1)' : 'rgba(100,116,139,0.2)', border: '1px solid rgba(100,116,139,0.3)', borderRadius: '5px', color: '#94a3b8', fontSize: '13px', cursor: logLoading ? 'not-allowed' : 'pointer' }}>
+          </div>
+          <button
+            onClick={fetchLog}
+            disabled={logLoading}
+            style={{ padding: '6px 14px', background: 'rgba(100,116,139,0.2)', border: '1px solid rgba(100,116,139,0.3)', borderRadius: '5px', color: '#94a3b8', fontSize: '13px', cursor: logLoading ? 'not-allowed' : 'pointer' }}
+          >
             {logLoading ? 'Loading...' : '↻ Refresh Log'}
           </button>
         </div>
+
         <pre style={{
-          background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(100,116,139,0.2)',
+          background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(100,116,139,0.15)',
           borderRadius: '6px', padding: '16px', color: '#a3e635',
           fontSize: '12px', fontFamily: 'Consolas, monospace',
-          maxHeight: '420px', overflowY: 'auto',
+          maxHeight: '500px', overflowY: 'auto',
           whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
         }}>
-          {log || '(No log yet — click "Refresh Log" after triggering a deployment and waiting ~2 minutes)'}
+          {log || '(No log yet — click the button above, wait ~2 minutes, then click "↻ Refresh Log")'}
         </pre>
       </div>
 

@@ -186,20 +186,8 @@ exit /b 1
 
 REM ── :log subroutine ───────────────────────────────────────────────────────────
 :log
-setlocal
-set "_LVL=%~1"
-set "_MSG=%~2"
-
-REM Build timestamp using WMIC (works on all Windows versions)
-for /f "skip=1 delims=" %%T in ('wmic os get localdatetime /value 2^>nul ^| findstr /r "^LocalDateTime"') do (
-    for /f "tokens=2 delims==" %%V in ("%%T") do (
-        set "_DT=%%V"
-    )
-)
-set "_TS=!_DT:~0,4!-!_DT:~4,2!-!_DT:~6,2! !_DT:~8,2!:!_DT:~10,2!:!_DT:~12,2!"
-
-set "_LINE=!_TS!  [!_LVL!] !_MSG!"
-echo !_LINE!
-echo !_LINE! >> "%LOG_FILE%"
-endlocal
+for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"`) do set "_logts=%%T"
+set "_logline=%_logts%  [%~1] %~2"
+echo %_logline%
+echo %_logline% >> "%LOG_FILE%"
 exit /b 0
