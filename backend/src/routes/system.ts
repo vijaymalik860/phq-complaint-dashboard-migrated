@@ -5,6 +5,20 @@ import fs from 'fs';
 import { authenticate, AuthUser } from '../middleware/auth.js';
 import { prisma } from '../config/database.js';
 
+// Robust helper to dynamically trace the project root containing deploy.bat
+function getProjectRoot(): string {
+  let dir = process.cwd();
+  // Traverse up to find the folder containing deploy.bat
+  while (dir) {
+    if (fs.existsSync(path.join(dir, 'deploy.bat'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd(); // fallback
+}
 
 export async function systemRoutes(app: FastifyInstance) {
 
@@ -35,11 +49,10 @@ export async function systemRoutes(app: FastifyInstance) {
       }
 
       try {
-        // PM2 sets process.cwd() to the project root (via ecosystem.config.cjs cwd field)
-        const projectRoot = process.cwd();
+        const projectRoot = getProjectRoot();
         const scriptPath  = path.join(projectRoot, 'deploy.bat');
 
-        app.log.info(`[deploy] Script: ${scriptPath} | cwd: ${projectRoot}`);
+        app.log.info(`[deploy] Script: ${scriptPath} | root: ${projectRoot}`);
 
         if (!fs.existsSync(scriptPath)) {
           app.log.error(`[deploy] deploy.bat NOT FOUND at: ${scriptPath}`);
@@ -49,18 +62,22 @@ export async function systemRoutes(app: FastifyInstance) {
         // Use PowerShell Start-Process to launch deploy.bat as a FULLY DETACHED
         // process outside the parent Node.js Job Object so it survives PM2 restart.
         //
-        // IMPORTANT: Do NOT use -RedirectStandardOutput here — it creates a
-        // Windows file-lock conflict with deploy.bat's own file logger.
-        // deploy.bat writes its own timestamped log to logs\deploy.log directly.
+        // IMPORTANT: Use single quotes (') for paths to prevent PowerShell from
+        // stripping double quotes when parsing the -Command string, which fails
+        // on paths with spaces (e.g. "Harshit Sir Work").
         const psCmd = [
           'Start-Process',
-          '-FilePath',        `"${scriptPath}"`,
-          '-WorkingDirectory', `"${projectRoot}"`,
+          '-FilePath',        `'${scriptPath}'`,
+          '-WorkingDirectory', `'${projectRoot}'`,
           '-WindowStyle',     'Hidden',
         ].join(' ');
 
+        app.log.info(`[deploy] Executing PowerShell Command: ${psCmd}`);
+
         const child = spawn('powershell.exe', [
+          '-NoProfile',
           '-NonInteractive',
+          '-ExecutionPolicy', 'Bypass',
           '-WindowStyle', 'Hidden',
           '-Command', psCmd,
         ], {
@@ -93,7 +110,7 @@ export async function systemRoutes(app: FastifyInstance) {
         return reply.status(403).send({ error: 'Unauthorized.' });
       }
 
-      const projectRoot = process.cwd();
+      const projectRoot = getProjectRoot();
       const logPath     = path.join(projectRoot, 'logs', 'deploy.log');
 
       if (!fs.existsSync(logPath)) {
@@ -125,7 +142,7 @@ export async function systemRoutes(app: FastifyInstance) {
         return reply.status(403).send({ error: 'Unauthorized.' });
       }
 
-      const projectRoot  = process.cwd();
+      const projectRoot  = getProjectRoot();
       const scriptPath   = path.join(projectRoot, 'deploy.bat');
       const logPath      = path.join(projectRoot, 'logs', 'deploy.log');
 

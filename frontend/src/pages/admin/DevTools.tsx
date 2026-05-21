@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import api from '../../services/api';
 
+declare const __BUILD_TIMESTAMP__: string;
+
+const buildTime = typeof __BUILD_TIMESTAMP__ !== 'undefined'
+  ? new Date(__BUILD_TIMESTAMP__).toLocaleString()
+  : 'Development (Local)';
+
 const DevTools = () => {
   const [loading, setLoading]           = useState(false);
   const [log, setLog]                   = useState<string>('');
@@ -49,8 +55,11 @@ const DevTools = () => {
 
   return (
     <Layout>
-      <div className="module-header">
-        <h1 className="module-title" style={{ color: '#e2e8f0' }}>Developer Tools — System Update</h1>
+      <div className="module-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <h1 className="module-title" style={{ color: '#e2e8f0', margin: 0 }}>Developer Tools — System Update</h1>
+        <div style={{ fontSize: '12px', color: '#94a3b8', background: 'rgba(30,41,59,0.6)', padding: '8px 16px', borderRadius: '6px', border: '1px solid rgba(100,116,139,0.2)' }}>
+          Active Build Date: <span style={{ color: '#38bdf8', fontWeight: 600 }}>{buildTime}</span>
+        </div>
       </div>
 
       {/* ── Update Card ── */}
