@@ -225,6 +225,10 @@ if (Test-Path $frontendDist) {
     Write-Warn "No frontend dist to backup — this may be the first deploy."
 }
 
+# ── Stop PM2 to release all Windows file/DLL locks ───────────────────────────
+Write-Host "    Stopping PM2 processes to release Windows file/DLL locks..." -ForegroundColor DarkGray
+$ErrorActionPreference = "Continue"
+pm2 stop grievance-backend grievance-frontend 2>&1 | Out-Null
 $ErrorActionPreference = "Stop"
 
 # ── STEP 3: Ensure frontend .env for production ───────────────────────────────
