@@ -40,14 +40,11 @@ export async function systemRoutes(app: FastifyInstance) {
       }
 
       try {
-        // Spawn deploy.bat using PowerShell Start-Process so it escapes the Node/PM2 process job object and process tree.
-        // This is crucial on Windows, because when deploy.bat runs 'pm2 stop', PM2 kills the backend process.
-        // If spawned via standard spawn, Windows automatically kills the child deploy.bat process as well.
-        // Start-Process launches a completely independent, detached process.
+        // Spawn deploy.bat directly via cmd.exe in a detached process
+        // This matches the Court Portal reference deployment structure on this server.
         const scriptPath = path.resolve(process.cwd(), '../deploy.bat');
-        const psCommand = `Start-Process -FilePath "${scriptPath}" -ArgumentList "--background" -WindowStyle Hidden`;
         
-        const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psCommand], {
+        const child = spawn('cmd.exe', ['/c', scriptPath], {
           detached: true,
           stdio: 'ignore'
         });
