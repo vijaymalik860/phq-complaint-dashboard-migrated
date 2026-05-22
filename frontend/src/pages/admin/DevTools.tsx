@@ -31,7 +31,6 @@ function lineColor(line: string): string {
 const POLL_MS = 5000;
 
 const DevTools = () => {
-  const [triggering, setTriggering]     = useState(false);
   const [log, setLog]                   = useState('');
   const [logUpdatedAt, setLogUpdatedAt] = useState<string | null>(null);
   const [logLoading, setLogLoading]     = useState(false);
@@ -76,7 +75,6 @@ const DevTools = () => {
 
   const handleDeploy = async () => {
     if (!window.confirm('Pull latest code from GitHub, rebuild and restart the server?\n\nApp unavailable ~2 minutes. Proceed?')) return;
-    setTriggering(true);
     setStatus('triggering');
     setErrorMsg('');
     setLog('Sending deployment signal...');
@@ -90,8 +88,6 @@ const DevTools = () => {
       setErrorMsg(m);
       setLog('');
       setStatus('error');
-    } finally {
-      setTriggering(false);
     }
   };
 
