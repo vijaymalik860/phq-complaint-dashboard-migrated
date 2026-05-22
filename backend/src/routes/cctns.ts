@@ -559,32 +559,32 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
       }
     }
 
-if (disposalAge) {
+    if (disposalAge) {
+      let intervalCondition = "";
       if (disposalAge === 'u7') {
-        andConditions.push({
-          disposalDate: { gte: new Date(Date.now() - 7 * 86400000), not: null },
-          statusGroup: 'disposed', isDisposedMissingDate: false,
-        });
+        intervalCondition = `"disposalDate" - "complRegDt" < INTERVAL '7 days'`;
       } else if (disposalAge === 'u15') {
-        andConditions.push({
-          disposalDate: { lte: new Date(Date.now() - 7 * 86400000), gte: new Date(Date.now() - 15 * 86400000), not: null },
-          statusGroup: 'disposed', isDisposedMissingDate: false,
-        });
+        intervalCondition = `"disposalDate" - "complRegDt" < INTERVAL '15 days'`;
       } else if (disposalAge === 'u30') {
-        andConditions.push({
-          disposalDate: { lte: new Date(Date.now() - 15 * 86400000), gte: new Date(Date.now() - 30 * 86400000), not: null },
-          statusGroup: 'disposed', isDisposedMissingDate: false,
-        });
+        intervalCondition = `"disposalDate" - "complRegDt" < INTERVAL '30 days'`;
       } else if (disposalAge === 'o30') {
-        andConditions.push({
-          disposalDate: { lte: new Date(Date.now() - 30 * 86400000), gte: new Date(Date.now() - 60 * 86400000), not: null },
-          statusGroup: 'disposed', isDisposedMissingDate: false,
-        });
+        intervalCondition = `"disposalDate" - "complRegDt" < INTERVAL '60 days'`;
       } else if (disposalAge === 'o60') {
-        andConditions.push({
-          disposalDate: { lte: new Date(Date.now() - 60 * 86400000), not: null },
-          statusGroup: 'disposed', isDisposedMissingDate: false,
-        });
+        intervalCondition = `"disposalDate" - "complRegDt" >= INTERVAL '60 days'`;
+      }
+
+      if (intervalCondition) {
+        const matchingIdsResult = await prisma.$queryRawUnsafe<Array<{ id: number }>>(`
+          SELECT id FROM "Complaint"
+          WHERE "statusGroup" = 'disposed'
+            AND "isDisposedMissingDate" = false
+            AND "complRegDt" IS NOT NULL
+            AND "disposalDate" IS NOT NULL
+            AND "disposalDate" >= "complRegDt"
+            AND ${intervalCondition}
+        `);
+        const matchingIds = matchingIdsResult.map(r => r.id);
+        andConditions.push({ id: { in: matchingIds } });
       }
     }
 

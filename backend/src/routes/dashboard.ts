@@ -360,10 +360,10 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
             COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false) as disposed,
             COUNT(*) FILTER (WHERE "isDisposedMissingDate" = true) as "missingDates",
             COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" < INTERVAL '7 days')   AS u7,
-            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" >= INTERVAL '7 days'  AND "disposalDate" - "complRegDt" < INTERVAL '15 days') AS u15,
-            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" >= INTERVAL '15 days' AND "disposalDate" - "complRegDt" < INTERVAL '30 days') AS u30,
-            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" >= INTERVAL '30 days' AND "disposalDate" - "complRegDt" < INTERVAL '60 days') AS o30,
-            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" >= INTERVAL '60 days')                                                        AS o60
+            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" < INTERVAL '15 days')  AS u15,
+            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" < INTERVAL '30 days')  AS u30,
+            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" < INTERVAL '60 days')  AS o30,
+            COUNT(*) FILTER (WHERE "isDisposedMissingDate" = false AND "disposalDate" >= "complRegDt" AND "disposalDate" - "complRegDt" >= INTERVAL '60 days') AS o60
           FROM "Complaint"
           WHERE "statusGroup" = 'disposed'
             AND ${filterWhere}
@@ -503,10 +503,10 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
             if (rawDays >= 0) {
               stats.totalDisposalDays += rawDays;
               if (rawDays < 7) stats.du7++;
-              else if (rawDays < 15) stats.du15++;
-              else if (rawDays < 30) stats.du30++;
-              else if (rawDays < 60) stats.do30++;
-              else stats.do60++;
+              if (rawDays < 15) stats.du15++;
+              if (rawDays < 30) stats.du30++;
+              if (rawDays < 60) stats.do30++;
+              if (rawDays >= 60) stats.do60++;
             }
           }
         }
