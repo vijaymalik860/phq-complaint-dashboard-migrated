@@ -554,6 +554,8 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
       } else if (pendencyAge === 'o60') {
         const d60 = new Date(now); d60.setDate(d60.getDate() - 60);
         andConditions.push({ complRegDt: { lte: d60 } });
+      } else if (pendencyAge === 'missing') {
+        andConditions.push({ complRegDt: null });
       }
     }
 

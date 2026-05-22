@@ -267,6 +267,7 @@ export const ComplaintsDrawer = ({ open, title, filters, onClose }: Props) => {
                 : filters.pendencyAge === 'u30' ? 'Within 30 Days'
                 : filters.pendencyAge === 'o30' ? 'Within 2 Months'
                 : filters.pendencyAge === 'o60' ? 'Over 2 Months'
+                : filters.pendencyAge === 'missing' ? 'Date Not Found'
                 : filters.pendencyAge
               }</span>}
               {filters.disposalAge    && <span className="drawer-badge age">Disp Age: {

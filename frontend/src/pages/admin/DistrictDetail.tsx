@@ -232,6 +232,7 @@ export const DistrictDetail = () => {
   const pendencyCols: Column<any>[] = [
     { key: 'ps', label: 'Police Station', sortable: true },
     { key: 'pending', label: 'Total', sortable: true, align: 'center' },
+    { key: 'pendingMissingDates', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'u7', label: '< 7 Days', sortable: true, align: 'center' },
     { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
     { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
@@ -243,6 +244,7 @@ export const DistrictDetail = () => {
     const total = row.pending || 1;
     if (col.key === 'ps') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.ps}</span>;
     if (col.key === 'pending') return <ClickableCell value={row.pending} psName={row.ps} psId={row.psId} statusGroup="pending" color="#60a5fa" />;
+    if (col.key === 'pendingMissingDates') return <span style={{ color: '#94a3b8' }}><ClickableCell value={row.pendingMissingDates ?? 0} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'missing' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.pendingMissingDates || 0) * 100 / total)}%)</span></span>;
     if (col.key === 'u7') return <span style={{ color: 'var(--text-muted)' }}><ClickableCell value={row.u7} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u7' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u7 || 0) * 100 / total)}%)</span></span>;
     if (col.key === 'u15') return <span style={{ color: '#eab308' }}><ClickableCell value={row.u15} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u15' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u15 || 0) * 100 / total)}%)</span></span>;
     if (col.key === 'u30') return <span style={{ color: '#fb923c', fontWeight: 500 }}><ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u30 || 0) * 100 / total)}%)</span></span>;
@@ -388,10 +390,12 @@ export const DistrictDetail = () => {
                   'Disposed %': `${Math.round((ps.disposed / (ps.total || 1)) * 100)}%`,
                   'Pending %': `${Math.round((ps.pending / (ps.total || 1)) * 100)}%`,
                   'Status Not Found %': `${Math.round(((ps.unknown || 0) / (ps.total || 1)) * 100)}%`,
+                  'Pending (Date Not Found)': ps.pendingMissingDates ?? 0,
                   '< 7 Days (Pending)': ps.u7,
                   '7 - 15 Days (Pending)': ps.u15,
                   '15 - 30 Days (Pending)': ps.u30,
-                  '> 30 Days (Pending)': ps.o30,
+                  '1-2 Months (Pending)': ps.o30,
+                  'Over 2 Months (Pending)': ps.o60,
                   'Avg Disposal (Days)': ps.avgDisposalDays
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(psSummary), 'PS Summary');
@@ -416,7 +420,8 @@ export const DistrictDetail = () => {
                   'Within 7 Days (Disposed)': ps.du7,
                   'Within 15 Days (Disposed)': ps.du15,
                   'Within 30 Days (Disposed)': ps.du30,
-                  '> 30 Days (Disposed)': ps.do30
+                  'Within 2 Months (Disposed)': ps.do30,
+                  'Over 2 Months (Disposed)': ps.do60
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(psDisposal), 'Disposal Matrix');
 
@@ -584,20 +589,23 @@ export const DistrictDetail = () => {
                   getTotalRow={(data) => {
                     const totals = data.reduce<Record<string, number>>((acc, r) => ({
                       pending: acc.pending + Number(r.pending || 0),
+                      pendingMissingDates: acc.pendingMissingDates + Number(r.pendingMissingDates || 0),
                       u7: acc.u7 + Number(r.u7 || 0),
                       u15: acc.u15 + Number(r.u15 || 0),
                       u30: acc.u30 + Number(r.u30 || 0),
                       o30: acc.o30 + Number(r.o30 || 0),
                       o60: acc.o60 + Number(r.o60 || 0),
-                    }), { pending: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                    }), { pending: 0, pendingMissingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                    const grandTotal = totals.pending || 1;
                     return {
                       ps: '',
                       pending: totals.pending.toLocaleString(),
-                      u7: totals.u7.toLocaleString(),
-                      u15: totals.u15.toLocaleString(),
-                      u30: totals.u30.toLocaleString(),
-                      o30: totals.o30.toLocaleString(),
-                      o60: totals.o60.toLocaleString(),
+                      pendingMissingDates: `${totals.pendingMissingDates.toLocaleString()} (${Math.round(totals.pendingMissingDates * 100 / grandTotal)}%)`,
+                      u7: `${totals.u7.toLocaleString()} (${Math.round(totals.u7 * 100 / grandTotal)}%)`,
+                      u15: `${totals.u15.toLocaleString()} (${Math.round(totals.u15 * 100 / grandTotal)}%)`,
+                      u30: `${totals.u30.toLocaleString()} (${Math.round(totals.u30 * 100 / grandTotal)}%)`,
+                      o30: `${totals.o30.toLocaleString()} (${Math.round(totals.o30 * 100 / grandTotal)}%)`,
+                      o60: `${totals.o60.toLocaleString()} (${Math.round(totals.o60 * 100 / grandTotal)}%)`,
                     };
                   }}
                 />
@@ -628,15 +636,17 @@ export const DistrictDetail = () => {
                       do30: acc.do30 + Number(r.do30 || 0),
                       do60: acc.do60 + Number(r.do60 || 0),
                     }), { disposed: 0, missingDates: 0, du7: 0, du15: 0, du30: 0, do30: 0, do60: 0 });
+                    const grandTotal = totals.disposed || 1;
+                    const totalDisposedAll = totals.disposed + totals.missingDates || 1;
                     return {
                       ps: '',
                       disposed: totals.disposed.toLocaleString(),
-                      missingDates: totals.missingDates.toLocaleString(),
-                      du7: totals.du7.toLocaleString(),
-                      du15: totals.du15.toLocaleString(),
-                      du30: totals.du30.toLocaleString(),
-                      do30: totals.do30.toLocaleString(),
-                      do60: totals.do60.toLocaleString(),
+                      missingDates: `${totals.missingDates.toLocaleString()} (${Math.round(totals.missingDates * 100 / totalDisposedAll)}%)`,
+                      du7: `${totals.du7.toLocaleString()} (${Math.round(totals.du7 * 100 / grandTotal)}%)`,
+                      du15: `${totals.du15.toLocaleString()} (${Math.round(totals.du15 * 100 / grandTotal)}%)`,
+                      du30: `${totals.du30.toLocaleString()} (${Math.round(totals.du30 * 100 / grandTotal)}%)`,
+                      do30: `${totals.do30.toLocaleString()} (${Math.round(totals.do30 * 100 / grandTotal)}%)`,
+                      do60: `${totals.do60.toLocaleString()} (${Math.round(totals.do60 * 100 / grandTotal)}%)`,
                     };
                   }}
                 />

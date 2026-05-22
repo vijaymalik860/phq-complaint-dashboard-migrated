@@ -375,6 +375,7 @@ export const DashboardPage = () => {
     const total = row.total || 1;
     return {
       ...row,
+      pct_missing: Math.round((row.missingDates || 0) * 100 / total),
       pct_u7: Math.round((row.u7 || 0) * 100 / total),
       pct_u15: Math.round((row.u15 || 0) * 100 / total),
       pct_u30: Math.round((row.u30 || 0) * 100 / total),
@@ -387,6 +388,7 @@ export const DashboardPage = () => {
   const matrixCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'Total', sortable: true, align: 'center' },
+    { key: 'missingDates', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'u7', label: '<7 Days', sortable: true, align: 'center' },
     { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
     { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
@@ -406,6 +408,7 @@ export const DashboardPage = () => {
   const renderMatrixDays = (col: any, row: any) => {
     if (col.key === 'district') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total') return mkCell(row.total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
+    if (col.key === 'missingDates') return mkCell(row.missingDates || 0, '#94a3b8', undefined, row.district ? () => openDrawer(`${row.district} — Pending (Date Not Found)`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'missing' })) : undefined);
     if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
@@ -417,6 +420,7 @@ export const DashboardPage = () => {
   const matrixPctCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'Total', sortable: true, align: 'center' },
+    { key: 'pct_missing', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'pct_u7', label: '<7 Days', sortable: true, align: 'center' },
     { key: 'pct_u15', label: '7-15 Days', sortable: true, align: 'center' },
     { key: 'pct_u30', label: '15-30 Days', sortable: true, align: 'center' },
@@ -435,12 +439,12 @@ export const DashboardPage = () => {
     );
     if (col.key === 'district')  return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total') return mkPct(row.pct_total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
+    if (col.key === 'pct_missing') return mkPct(row.pct_missing || 0, 'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending (Date Not Found)`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'missing' })) : undefined);
     if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
     if (col.key === 'pct_o30')  return mkPct(row.pct_o30,  '#ef4444',          'bold',    row.district ? () => openDrawer(`${row.district} — Pending 1-2 Months`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o30' })) : undefined);
     if (col.key === 'pct_o60')  return mkPct(row.pct_o60 || 0, '#b91c1c',      'bold',    row.district ? () => openDrawer(`${row.district} — Pending Over 2 Months`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'o60' })) : undefined);
-    return row[col.key];
   };
 
   const disposalMatrixWithPct = disposalMatrix.map((row: any) => {
@@ -634,10 +638,13 @@ export const DashboardPage = () => {
                 // Sheet 5: Pendency Ageing Matrix
                 const matrixSummary = matrix.map((d: any) => ({
                   'District': d.district,
+                  'Total': d.pending || 0,
+                  'Date Not Found': d.missingDates || 0,
                   '< 7 Days (Pending)': d.u7,
                   '7 - 15 Days (Pending)': d.u15,
                   '15 - 30 Days (Pending)': d.u30,
-                  '> 30 Days (Pending)': d.o30
+                  '1-2 Months (Pending)': d.o30,
+                  'Over 2 Months (Pending)': d.o60,
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matrixSummary), 'Pendency Ageing Matrix');
 
@@ -912,15 +919,17 @@ export const DashboardPage = () => {
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
                     total: acc.total + Number(r.total || 0),
+                    missingDates: acc.missingDates + Number(r.missingDates || 0),
                     u7: acc.u7 + Number(r.u7 || 0),
                     u15: acc.u15 + Number(r.u15 || 0),
                     u30: acc.u30 + Number(r.u30 || 0),
                     o30: acc.o30 + Number(r.o30 || 0),
                     o60: acc.o60 + Number(r.o60 || 0),
-                  }), { total: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
                   return {
                     district: '',
                     total: totals.total.toLocaleString(),
+                    missingDates: totals.missingDates.toLocaleString(),
                     u7: totals.u7.toLocaleString(),
                     u15: totals.u15.toLocaleString(),
                     u30: totals.u30.toLocaleString(),
@@ -940,22 +949,24 @@ export const DashboardPage = () => {
                 showTotalRow={true}
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
-                    pct_total: acc.pct_total + Number(r.pct_total || 0),
-                    pct_u7: acc.pct_u7 + Number(r.pct_u7 || 0),
-                    pct_u15: acc.pct_u15 + Number(r.pct_u15 || 0),
-                    pct_u30: acc.pct_u30 + Number(r.pct_u30 || 0),
-                    pct_o30: acc.pct_o30 + Number(r.pct_o30 || 0),
-                    pct_o60: acc.pct_o60 + Number(r.pct_o60 || 0),
-                  }), { pct_total: 0, pct_u7: 0, pct_u15: 0, pct_u30: 0, pct_o30: 0, pct_o60: 0 });
-                  const count = data.length || 1;
+                    total: acc.total + Number(r.total || 0),
+                    missingDates: acc.missingDates + Number(r.missingDates || 0),
+                    u7: acc.u7 + Number(r.u7 || 0),
+                    u15: acc.u15 + Number(r.u15 || 0),
+                    u30: acc.u30 + Number(r.u30 || 0),
+                    o30: acc.o30 + Number(r.o30 || 0),
+                    o60: acc.o60 + Number(r.o60 || 0),
+                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  const grandTotal = totals.total || 1;
                   return {
                     district: '',
-                    pct_total: (totals.pct_total / count).toFixed(1) + '%',
-                    pct_u7: (totals.pct_u7 / count).toFixed(1) + '%',
-                    pct_u15: (totals.pct_u15 / count).toFixed(1) + '%',
-                    pct_u30: (totals.pct_u30 / count).toFixed(1) + '%',
-                    pct_o30: (totals.pct_o30 / count).toFixed(1) + '%',
-                    pct_o60: (totals.pct_o60 / count).toFixed(1) + '%',
+                    pct_total: '100%',
+                    pct_missing: Math.round(totals.missingDates * 100 / grandTotal) + '%',
+                    pct_u7: Math.round(totals.u7 * 100 / grandTotal) + '%',
+                    pct_u15: Math.round(totals.u15 * 100 / grandTotal) + '%',
+                    pct_u30: Math.round(totals.u30 * 100 / grandTotal) + '%',
+                    pct_o30: Math.round(totals.o30 * 100 / grandTotal) + '%',
+                    pct_o60: Math.round(totals.o60 * 100 / grandTotal) + '%',
                   };
                 }}
               />
@@ -1033,27 +1044,27 @@ export const DashboardPage = () => {
                 maxHeight="400px"
                 onRowClick={(row) => { if (row.district) navigate(`/admin/district/${encodeURIComponent(String(row.district))}`); }}
                 onSort={(key, dir) => key ? setDisposalMatrixSort({ key, dir }) : setDisposalMatrixSort(null)}
-                showTotalRow={true}
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
-                    pct_total: acc.pct_total + Number(r.pct_total || 0),
-                    pct_missing: acc.pct_missing + Number(r.pct_missing || 0),
-                    pct_u7: acc.pct_u7 + Number(r.pct_u7 || 0),
-                    pct_u15: acc.pct_u15 + Number(r.pct_u15 || 0),
-                    pct_u30: acc.pct_u30 + Number(r.pct_u30 || 0),
-                    pct_o30: acc.pct_o30 + Number(r.pct_o30 || 0),
-                    pct_o60: acc.pct_o60 + Number(r.pct_o60 || 0),
-                  }), { pct_total: 0, pct_missing: 0, pct_u7: 0, pct_u15: 0, pct_u30: 0, pct_o30: 0, pct_o60: 0 });
-                  const count = data.length || 1;
+                    total: acc.total + Number(r.total || 0),
+                    missingDates: acc.missingDates + Number(r.missingDates || 0),
+                    u7: acc.u7 + Number(r.u7 || 0),
+                    u15: acc.u15 + Number(r.u15 || 0),
+                    u30: acc.u30 + Number(r.u30 || 0),
+                    o30: acc.o30 + Number(r.o30 || 0),
+                    o60: acc.o60 + Number(r.o60 || 0),
+                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  const grandTotalDisposed = totals.total + totals.missingDates || 1;
+                  const totalWithDate = totals.total || 1;
                   return {
                     district: '',
-                    pct_total: (totals.pct_total / count).toFixed(1) + '%',
-                    pct_missing: (totals.pct_missing / count).toFixed(1) + '%',
-                    pct_u7: (totals.pct_u7 / count).toFixed(1) + '%',
-                    pct_u15: (totals.pct_u15 / count).toFixed(1) + '%',
-                    pct_u30: (totals.pct_u30 / count).toFixed(1) + '%',
-                    pct_o30: (totals.pct_o30 / count).toFixed(1) + '%',
-                    pct_o60: (totals.pct_o60 / count).toFixed(1) + '%',
+                    pct_total: Math.round(totals.total * 100 / grandTotalDisposed) + '%',
+                    pct_missing: Math.round(totals.missingDates * 100 / grandTotalDisposed) + '%',
+                    pct_u7: Math.round(totals.u7 * 100 / totalWithDate) + '%',
+                    pct_u15: Math.round(totals.u15 * 100 / totalWithDate) + '%',
+                    pct_u30: Math.round(totals.u30 * 100 / totalWithDate) + '%',
+                    pct_o30: Math.round(totals.o30 * 100 / totalWithDate) + '%',
+                    pct_o60: Math.round(totals.o60 * 100 / totalWithDate) + '%',
                   };
                 }}
               />

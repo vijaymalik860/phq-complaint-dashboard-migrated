@@ -1173,7 +1173,8 @@ export const CCTNSPage = () => {
                         urlPendencyAge === 'u15' ? 'Pendency: Within 15 Days' :
                           urlPendencyAge === 'u30' ? 'Pendency: Within 30 Days' :
                             urlPendencyAge === 'o30' ? 'Pendency: Within 2 Months' :
-                              urlPendencyAge === 'o60' ? 'Pendency: Over 2 Months' : `Pendency: ${urlPendencyAge}`),
+                              urlPendencyAge === 'o60' ? 'Pendency: Over 2 Months' :
+                                urlPendencyAge === 'missing' ? 'Pendency: Date Not Found' : `Pendency: ${urlPendencyAge}`),
                       urlDisposalAge && (urlDisposalAge === 'u7' ? 'Disposal: Within 7 Days' :
                         urlDisposalAge === 'u15' ? 'Disposal: Within 15 Days' :
                           urlDisposalAge === 'u30' ? 'Disposal: Within 30 Days' :

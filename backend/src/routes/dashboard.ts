@@ -440,7 +440,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     const now = Date.now();
     const psMap = new Map<string, {
       psIds: Set<bigint>;
-      total: number; pending: number; disposed: number; unknown: number; missingDates: number;
+      total: number; pending: number; disposed: number; unknown: number; missingDates: number; pendingMissingDates: number;
       u7: number; u15: number; u30: number; o30: number; o60: number;
       du7: number; du15: number; du30: number; do30: number; do60: number; totalDisposalDays: number;
     }>();
@@ -465,7 +465,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       const category = comp.classOfIncident || UNMAPPED;
       const stats = psMap.get(ps) || {
         psIds: new Set<bigint>(),
-        total: 0, pending: 0, disposed: 0, unknown: 0, missingDates: 0,
+        total: 0, pending: 0, disposed: 0, unknown: 0, missingDates: 0, pendingMissingDates: 0,
         u7: 0, u15: 0, u30: 0, o30: 0, o60: 0,
         du7: 0, du15: 0, du30: 0, do30: 0, do60: 0,
         totalDisposalDays: 0,
@@ -488,6 +488,8 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
           else if (days < 30) stats.u30++;
           else if (days < 60) stats.o30++;  // 1-2 Months
           else stats.o60++;                 // Over 2 Months
+        } else {
+          stats.pendingMissingDates++;
         }
       } else if (comp.statusGroup === 'disposed') {
         stats.disposed++;
@@ -522,6 +524,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       psId: stats.psIds.size > 0 ? Array.from(stats.psIds).join(',') : null,
       total: stats.total,
       pending: stats.pending,
+      pendingMissingDates: stats.pendingMissingDates,
       disposed: stats.disposed,
       unknown: stats.unknown,      // status not found in record
       missingDates: stats.missingDates,
