@@ -27,9 +27,15 @@ set "BACKUP_DIR=%ROOT%\_backup"
 REM ── Ensure logs directory exists ──────────────────────────────────────────────
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
 
-REM ── Logging helper (:log) writes to stdout AND log file ──────────────────────
-REM    Usage: call :log "LEVEL" "Message"
-REM    Level: INFO | OK | WARN | FAIL | STEP
+REM ── Detect APP_PORT early (used in health checks AND rollback) ────────────────
+set "APP_PORT=3001"
+if exist "%ROOT%\backend\.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in ("%ROOT%\backend\.env") do (
+        if /i "%%A"=="PORT" set "APP_PORT=%%B"
+    )
+)
+REM Strip any surrounding quotes from APP_PORT
+set "APP_PORT=%APP_PORT:"=%"
 
 REM ── Start ─────────────────────────────────────────────────────────────────────
 call :log STEP "=== DEPLOY STARTED ==="
@@ -136,14 +142,6 @@ REM ── 9. Health Check ─────────────────�
 call :log STEP "Running health check (waiting 20 seconds for startup)..."
 ping 127.0.0.1 -n 21 >nul
 
-set APP_PORT=3001
-if exist "%ROOT%\backend\.env" (
-    for /f "usebackq tokens=1,2 delims==" %%A in ("%ROOT%\backend\.env") do (
-        if "%%A"=="PORT" set "APP_PORT=%%B"
-    )
-)
-set "APP_PORT=%APP_PORT:"=%"
-
 set RETRIES=6
 :health_loop
 if "%RETRIES%"=="0" goto :health_failed
@@ -170,24 +168,73 @@ exit /b 0
 REM ── Rollback ──────────────────────────────────────────────────────────────────
 :rollback
 call :log STEP "--- ROLLBACK STARTED ---"
+
+REM 1. Restore git source to last good commit
+if not "%PREV_COMMIT%"=="" (
+    call :log INFO "Restoring source code to previous commit: !PREV_COMMIT!..."
+    git reset --hard !PREV_COMMIT! >nul 2>&1
+    if errorlevel 1 (
+        call :log WARN "Could not reset git to previous commit. Dist restore will still proceed."
+    ) else (
+        call :log OK "Source code restored to previous commit."
+    )
+) else (
+    call :log WARN "PREV_COMMIT not set - skipping git restore."
+)
+
+REM 2. Restore compiled dist from backup
 if not exist "%BACKUP_DIR%" (
-    call :log FAIL "No backup found. Cannot rollback."
+    call :log FAIL "No backup found. Cannot restore dist files."
+    call :log STEP "--- ROLLBACK FAILED - NO BACKUP ---"
+    call :log STEP "=== DEPLOY FAILED ==="
     exit /b 1
 )
+call :log INFO "Restoring dist files from backup..."
 if exist "%ROOT%\frontend\dist" rmdir /s /q "%ROOT%\frontend\dist" >nul 2>&1
 if exist "%ROOT%\backend\dist"  rmdir /s /q "%ROOT%\backend\dist"  >nul 2>&1
 if exist "%BACKUP_DIR%\frontend_dist" xcopy /e /q /i "%BACKUP_DIR%\frontend_dist" "%ROOT%\frontend\dist" >nul 2>&1
 if exist "%BACKUP_DIR%\backend_dist"  xcopy /e /q /i "%BACKUP_DIR%\backend_dist"  "%ROOT%\backend\dist"  >nul 2>&1
-call pm2 restart grievance-backend grievance-frontend >nul 2>&1
-ping 127.0.0.1 -n 11 >nul
-curl -sf http://localhost:%APP_PORT%/api/health >nul 2>&1
+call :log OK "Dist files restored from backup."
+
+REM 3. Restart PM2 with restored dist
+call :log STEP "Restarting PM2 with restored dist..."
+call pm2 restart grievance-backend grievance-frontend
 if errorlevel 1 (
-    call :log FAIL "Rollback complete but health check still failing. Run: pm2 logs"
-) else (
-    call :log OK "Rollback complete. Previous stable version is live."
+    call :log WARN "pm2 restart returned non-zero. Trying pm2 start as fallback..."
+    call pm2 start grievance-backend >nul 2>&1
+    call pm2 start grievance-frontend >nul 2>&1
 )
+call pm2 save >nul 2>&1
+call :log OK "PM2 restart issued."
+
+REM 4. Wait and health-check with retries
+call :log INFO "Waiting 20 seconds for app to come up..."
+ping 127.0.0.1 -n 21 >nul
+
+set RB_RETRIES=4
+:rb_health_loop
+if "%RB_RETRIES%"=="0" goto :rb_health_failed
+curl -sf http://localhost:%APP_PORT%/api/health >nul 2>&1
+if not errorlevel 1 goto :rb_health_done
+if not "%APP_PORT%"=="3001" (
+    curl -sf http://localhost:3001/api/health >nul 2>&1
+    if not errorlevel 1 ( set "APP_PORT=3001" & goto :rb_health_done )
+)
+set /a RB_RETRIES=RB_RETRIES-1
+call :log INFO "App not responding yet. Retrying (%RB_RETRIES% left)..."
+ping 127.0.0.1 -n 11 >nul
+goto :rb_health_loop
+
+:rb_health_failed
+call :log FAIL "Rollback complete but health check still failing. Run: pm2 logs"
 call :log STEP "--- ROLLBACK DONE ---"
-call :log STEP "=== DEPLOY FAILED - ROLLED BACK ==="
+call :log STEP "=== DEPLOY FAILED ==="
+exit /b 1
+
+:rb_health_done
+call :log OK "Rollback health check passed. Previous stable version is live at http://localhost:%APP_PORT%"
+call :log STEP "--- ROLLBACK DONE ---"
+call :log STEP "=== DEPLOY FAILED ==="
 exit /b 1
 
 REM ── :log subroutine ───────────────────────────────────────────────────────────
