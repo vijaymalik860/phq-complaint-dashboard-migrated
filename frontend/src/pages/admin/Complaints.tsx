@@ -61,7 +61,7 @@ export const ComplaintsPage = () => {
 
   const tableData = complaints.map((c: Record<string, unknown>) => ({
     regNum:   c.complRegNum || '-',
-    district: (c.district as Record<string, unknown>)?.name || c.addressDistrict || '-',
+    district: String(c.districtName || c.addressDistrict || '-'),
     name:     `${c.firstName || ''} ${c.lastName || ''}`.trim(),
     mobile:   c.mobile || '-',
     date:     c.complRegDt ? new Date(String(c.complRegDt)).toLocaleDateString() : '-',
@@ -94,7 +94,7 @@ export const ComplaintsPage = () => {
     const allRows = (json?.data?.data || json?.data || []) as Record<string, unknown>[];
     return allRows.map((c) => ({
       regNum:   c.complRegNum || '-',
-      district: (c.district as Record<string, unknown>)?.name || c.addressDistrict || '-',
+      district: String(c.districtName || c.addressDistrict || '-'),
       name:     `${c.firstName || ''} ${c.lastName || ''}`.trim(),
       mobile:   c.mobile || '-',
       date:     c.complRegDt ? new Date(String(c.complRegDt)).toLocaleDateString() : '-',

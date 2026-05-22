@@ -3,7 +3,7 @@ import { prisma } from '../config/database.js';
 import { sendSuccess, sendError, sendNotFound } from '../utils/response.js';
 import { authenticate } from '../middleware/auth.js';
 import { classifyComplaintStatus } from '../services/status.js';
-import { enrichWithMasterIds } from '../services/master-mapping.js';
+import { enrichWithMasterIds, getDistrictNameByIdMap } from '../services/master-mapping.js';
 import { buildPrismaWhereClause } from '../utils/filters.js';
 
 export const complaintRoutes = async (fastify: FastifyInstance) => {
@@ -74,6 +74,7 @@ export const complaintRoutes = async (fastify: FastifyInstance) => {
       mobile: true,
       complRegDt: true,
       statusOfComplaint: true,
+      districtMasterId: true,
     } as const;
 
     const [complaints, total] = await Promise.all([
@@ -81,8 +82,21 @@ export const complaintRoutes = async (fastify: FastifyInstance) => {
       prisma.complaint.count({ where }),
     ]);
 
+    const districtMap = await getDistrictNameByIdMap();
+    const enrichedComplaints = complaints.map(c => {
+      let resolvedDistrictName = c.districtName;
+      if (c.districtMasterId) {
+        resolvedDistrictName = districtMap.get(c.districtMasterId.toString()) || resolvedDistrictName;
+      }
+      return {
+        ...c,
+        districtMasterId: c.districtMasterId?.toString(),
+        districtName: resolvedDistrictName || c.addressDistrict || '-',
+      };
+    });
+
     return sendSuccess(reply, {
-      data: complaints,
+      data: enrichedComplaints,
       pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
     });
   });
@@ -105,7 +119,15 @@ export const complaintRoutes = async (fastify: FastifyInstance) => {
       return sendNotFound(reply, 'Complaint not found');
     }
 
-    return sendSuccess(reply, complaint);
+    const enriched = { ...complaint } as any;
+    if (complaint.districtMasterId) {
+      const district = await prisma.district.findUnique({ where: { id: complaint.districtMasterId } });
+      if (district) {
+        enriched.districtName = district.name;
+      }
+    }
+
+    return sendSuccess(reply, enriched);
   });
 
   fastify.post('/complaints', {

@@ -290,8 +290,8 @@ export const GlobalFilterBar = () => {
     staleTime: 5 * 60 * 1000,
   });
   const { data: offices, isLoading: officeLoading } = useQuery({
-    queryKey: ['filter-offices', filters.districtIds, filters.policeStationIds],
-    queryFn: () => referenceApi.offices({ districtIds: filters.districtIds || undefined, policeStationIds: filters.policeStationIds || undefined }),
+    queryKey: ['filter-offices'],
+    queryFn: () => referenceApi.offices(),
     staleTime: 5 * 60 * 1000,
   });
   const { data: classes, isLoading: classLoading } = useQuery({
@@ -326,7 +326,7 @@ export const GlobalFilterBar = () => {
     const valid = new Set(officeOptions.map(i => i.id));
     const pruned = selectedOfficeIds.filter(id => valid.has(id));
     if (pruned.length !== selectedOfficeIds.length) setFilter('officeIds', pruned.join(','));
-  }, [filters.districtIds, filters.policeStationIds, officeOptions]); // eslint-disable-line
+  }, [officeOptions]); // eslint-disable-line
 
   const closeAll = () => { setDistrictOpen(false); setStationOpen(false); setOfficeOpen(false); setClassOpen(false); };
 
@@ -378,7 +378,7 @@ export const GlobalFilterBar = () => {
           label="District" icon={<DistrictIcon />}
           isOpen={districtOpen} toggle={() => { closeAll(); setDistrictOpen(true); }}
           allLabel="All Districts" selectedIds={selectedDistrictIds} items={districtOptions}
-          onAllClick={() => { setFilter('districtIds',''); setFilter('policeStationIds',''); setFilter('officeIds',''); }}
+          onAllClick={() => { setFilter('districtIds',''); setFilter('policeStationIds',''); }}
           onToggleItem={id => setFilter('districtIds', toggleCsv(selectedDistrictIds, id).join(','))}
           onMouseEnter={() => setDistrictOpen(true)}
           onMouseLeave={() => setTimeout(() => setDistrictOpen(false), 400)}
@@ -394,7 +394,7 @@ export const GlobalFilterBar = () => {
           isOpen={stationOpen} toggle={() => { closeAll(); setStationOpen(true); }}
           allLabel={selectedDistrictIds.length ? 'All in District' : 'All Stations'}
           selectedIds={selectedStationIds} items={stationOptions} loading={psLoading}
-          onAllClick={() => { setFilter('policeStationIds',''); setFilter('officeIds',''); }}
+          onAllClick={() => { setFilter('policeStationIds',''); }}
           onToggleItem={id => setFilter('policeStationIds', toggleCsv(selectedStationIds, id).join(','))}
           onMouseEnter={() => setStationOpen(true)}
           onMouseLeave={() => setTimeout(() => setStationOpen(false), 400)}
@@ -408,7 +408,7 @@ export const GlobalFilterBar = () => {
         <MultiSelectDropdown
           label="Office" icon={<OfficeIcon />}
           isOpen={officeOpen} toggle={() => { closeAll(); setOfficeOpen(true); }}
-          allLabel={selectedDistrictIds.length || selectedStationIds.length ? 'All in Selection' : 'All Offices'}
+          allLabel="All Offices"
           selectedIds={selectedOfficeIds} items={officeOptions} loading={officeLoading}
           onAllClick={() => setFilter('officeIds','')}
           onToggleItem={id => setFilter('officeIds', toggleCsv(selectedOfficeIds, id).join(','))}

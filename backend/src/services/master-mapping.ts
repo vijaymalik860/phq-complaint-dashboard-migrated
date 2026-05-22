@@ -63,28 +63,36 @@ const loadDistrictLookups = async () => {
 
 const loadPoliceStationLookups = async () => {
   const stations = await prisma.policeStation.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, districtId: true },
   });
   const byName = new Map<string, bigint>();
   const byId = new Set<string>();
+  const stationDistrictMap = new Map<string, bigint>();
   for (const station of stations) {
     byName.set(normalizeName(station.name), station.id);
     byId.add(station.id.toString());
+    if (station.districtId) {
+      stationDistrictMap.set(station.id.toString(), station.districtId);
+    }
   }
-  return { byName, byId };
+  return { byName, byId, stationDistrictMap };
 };
 
 const loadOfficeLookups = async () => {
   const offices = await prisma.office.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, districtId: true },
   });
   const byName = new Map<string, bigint>();
   const byId = new Set<string>();
+  const officeDistrictMap = new Map<string, bigint>();
   for (const office of offices) {
     byName.set(normalizeName(office.name), office.id);
     byId.add(office.id.toString());
+    if (office.districtId) {
+      officeDistrictMap.set(office.id.toString(), office.districtId);
+    }
   }
-  return { byName, byId };
+  return { byName, byId, officeDistrictMap };
 };
 
 const resolveDistrictId = (
@@ -144,10 +152,11 @@ export type MasterLookups = {
   stationIdSet: Set<string>;
   officeByName: Map<string, bigint>;
   officeIdSet: Set<string>;
+  stationDistrictMap: Map<string, bigint>;
+  officeDistrictMap: Map<string, bigint>;
 };
 
 export const loadAllLookups = async (): Promise<MasterLookups> => {
-
   const [districtLookups, stationLookups, officeLookups] = await Promise.all([
     loadDistrictLookups(),
     loadPoliceStationLookups(),
@@ -160,6 +169,8 @@ export const loadAllLookups = async (): Promise<MasterLookups> => {
     stationIdSet: stationLookups.byId,
     officeByName: officeLookups.byName,
     officeIdSet: officeLookups.byId,
+    stationDistrictMap: stationLookups.stationDistrictMap,
+    officeDistrictMap: officeLookups.officeDistrictMap,
   };
 };
 
@@ -169,10 +180,24 @@ export const resolveMasterIds = async (
 ): Promise<ResolvedMasterIds> => {
   const resolvedLookups = lookups ?? (await loadAllLookups());
 
+  const policeStationMasterId = resolvePoliceStationId(input, resolvedLookups.stationByName, resolvedLookups.stationIdSet);
+  const officeMasterId = resolveOfficeId(input, resolvedLookups.officeByName, resolvedLookups.officeIdSet);
+
+  // Hierarchical district resolution:
+  // 1. Police Station's true operational district
+  // 2. Fallback to normal text/existing match (Do NOT map offices under districts)
+  let districtMasterId: bigint | null = null;
+  if (policeStationMasterId) {
+    districtMasterId = resolvedLookups.stationDistrictMap.get(policeStationMasterId.toString()) ?? null;
+  }
+  if (!districtMasterId) {
+    districtMasterId = resolveDistrictId(input, resolvedLookups.districtByName, resolvedLookups.districtIdSet);
+  }
+
   return {
-    districtMasterId: resolveDistrictId(input, resolvedLookups.districtByName, resolvedLookups.districtIdSet),
-    policeStationMasterId: resolvePoliceStationId(input, resolvedLookups.stationByName, resolvedLookups.stationIdSet),
-    officeMasterId: resolveOfficeId(input, resolvedLookups.officeByName, resolvedLookups.officeIdSet),
+    districtMasterId,
+    policeStationMasterId,
+    officeMasterId,
   };
 };
 
@@ -220,40 +245,81 @@ export const getOfficeNameByIdMap = async () => {
 };
 
 export const remapComplaintMasterIds = async () => {
-  const complaints = await prisma.complaint.findMany({
-    select: {
-      id: true,
-      districtMasterId: true,
-      policeStationMasterId: true,
-      officeMasterId: true,
-      districtName: true,
-      addressDistrict: true,
-      transferDistrictCd: true,
-      submitPsCd: true,
-      addressPs: true,
-      submitOfficeCd: true,
-      branch: true,
-    },
-  });
-
-  let mapped = 0;
-  let unmapped = 0;
+  const batchSize = 10000;
+  let lastId = 0;
+  let totalMapped = 0;
+  let totalUnmapped = 0;
+  let totalUpdated = 0;
+  let processed = 0;
 
   const lookups = await loadAllLookups();
+  console.log('Master lookups loaded.');
 
-  for (const complaint of complaints) {
-    const resolved = await resolveMasterIds(complaint, lookups);
-    await prisma.complaint.update({
-      where: { id: complaint.id },
-      data: resolved,
+  while (true) {
+    const complaints = await prisma.complaint.findMany({
+      where: { id: { gt: lastId } },
+      select: {
+        id: true,
+        districtMasterId: true,
+        policeStationMasterId: true,
+        officeMasterId: true,
+        districtName: true,
+        addressDistrict: true,
+        transferDistrictCd: true,
+        submitPsCd: true,
+        addressPs: true,
+        submitOfficeCd: true,
+        branch: true,
+      },
+      take: batchSize,
+      orderBy: { id: 'asc' },
     });
-    if (resolved.districtMasterId || resolved.policeStationMasterId || resolved.officeMasterId) mapped++;
-    else unmapped++;
+
+    if (complaints.length === 0) break;
+
+    const updatePromises = [];
+    for (const complaint of complaints) {
+      const resolved = await resolveMasterIds(complaint, lookups);
+      
+      const hasChanged = 
+        resolved.districtMasterId !== complaint.districtMasterId ||
+        resolved.policeStationMasterId !== complaint.policeStationMasterId ||
+        resolved.officeMasterId !== complaint.officeMasterId;
+
+      if (hasChanged) {
+        updatePromises.push(
+          prisma.complaint.update({
+            where: { id: complaint.id },
+            data: resolved,
+          })
+        );
+        totalUpdated++;
+      }
+
+      if (resolved.districtMasterId || resolved.policeStationMasterId || resolved.officeMasterId) {
+        totalMapped++;
+      } else {
+        totalUnmapped++;
+      }
+      
+      lastId = complaint.id;
+    }
+
+    if (updatePromises.length > 0) {
+      // Run updates in sub-batches of 100 concurrently to avoid overloading Prisma connection pool
+      for (let i = 0; i < updatePromises.length; i += 100) {
+        await Promise.all(updatePromises.slice(i, i + 100));
+      }
+    }
+
+    processed += complaints.length;
+    console.log(`Processed ${processed} complaints... (Updated: ${totalUpdated})`);
   }
 
   return {
-    total: complaints.length,
-    mapped,
-    unmapped,
+    total: processed,
+    mapped: totalMapped,
+    unmapped: totalUnmapped,
+    updated: totalUpdated,
   };
 };

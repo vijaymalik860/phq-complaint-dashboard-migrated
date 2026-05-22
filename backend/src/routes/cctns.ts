@@ -14,6 +14,7 @@ import {
   resolveMasterIds,
   MasterLookups,
   remapComplaintMasterIds,
+  getDistrictNameByIdMap,
 } from '../services/master-mapping.js';
 import { syncDistricts, syncOffices, syncPoliceStationsByDistrict } from './government.js';
 import { buildPrismaWhereClause } from '../utils/filters.js';
@@ -605,8 +606,21 @@ if (disposalAge) {
       prisma.complaint.count({ where }),
     ]);
 
+    const districtMap = await getDistrictNameByIdMap();
+    const enrichedRecords = records.map(c => {
+      let resolvedDistrictName = c.districtName;
+      if (c.districtMasterId) {
+        resolvedDistrictName = districtMap.get(c.districtMasterId.toString()) || resolvedDistrictName;
+      }
+      return {
+        ...c,
+        districtMasterId: c.districtMasterId?.toString(),
+        districtName: resolvedDistrictName || c.addressDistrict || '-',
+      };
+    });
+
     return sendSuccess(reply, {
-      data: records,
+      data: enrichedRecords,
       pagination: {
         page: pageNum,
         limit: limitNum,

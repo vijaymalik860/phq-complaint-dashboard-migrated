@@ -3,6 +3,7 @@ import { prisma } from '../config/database.js';
 import { sendSuccess } from '../utils/response.js';
 import { authenticate } from '../middleware/auth.js';
 import { buildPrismaWhereClause } from '../utils/filters.js';
+import { getDistrictNameByIdMap } from '../services/master-mapping.js';
 
 // Only the fields the Pending page actually renders — avoids transferring heavy
 // text columns like complDesc, ioDetails, respondentCategories, etc.
@@ -18,6 +19,7 @@ const PENDING_SELECT = {
   branch:          true,
   statusGroup:     true,
   statusOfComplaint: true,
+  districtMasterId: true,
 } as const;
 
 export const pendingRoutes = async (fastify: FastifyInstance) => {
@@ -51,8 +53,21 @@ export const pendingRoutes = async (fastify: FastifyInstance) => {
       prisma.complaint.count({ where }),
     ]);
 
+    const districtMap = await getDistrictNameByIdMap();
+    const enrichedComplaints = complaints.map(c => {
+      let resolvedDistrictName = c.districtName;
+      if (c.districtMasterId) {
+        resolvedDistrictName = districtMap.get(c.districtMasterId.toString()) || resolvedDistrictName;
+      }
+      return {
+        ...c,
+        districtMasterId: c.districtMasterId?.toString(),
+        districtName: resolvedDistrictName || c.addressDistrict || '-',
+      };
+    });
+
     return sendSuccess(reply, {
-      data: complaints,
+      data: enrichedComplaints,
       pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
     });
   };
