@@ -68,6 +68,26 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     `;
     const avgDisposalTime = Math.round(Number(avgResult[0]?.avg_days ?? 0));
 
+    // Calculate Avg Pending Time (similar to Avg Disposal Time)
+    const avgPendingResult = await prisma.$queryRaw<[{ avg_days: number }]>`
+      SELECT COALESCE(
+        AVG(GREATEST(0, EXTRACT(EPOCH FROM (NOW() - "complRegDt")) / 86400)),
+        0
+      ) AS avg_days
+      FROM "Complaint"
+      WHERE "statusGroup" = 'pending'
+        AND "complRegDt" IS NOT NULL
+        AND ${filterWhereAvg}
+    `;
+    const avgPendingTime = Math.round(Number(avgPendingResult[0]?.avg_days ?? 0));
+
+    // Calculate Oldest Pending Complaint Date
+    const oldestPendingResult = await prisma.complaint.aggregate({
+      where: withAnd(baseWhere, { statusGroup: 'pending', complRegDt: { not: null } }),
+      _min: { complRegDt: true },
+    });
+    const oldestPendingDate = oldestPendingResult._min.complRegDt;
+
     // Last successful sync time — shown in the dashboard header (PR #4)
     const lastSuccessfulSync = await prisma.syncRun.findFirst({
       where: { status: { in: ['success', 'partial'] }, endedAt: { not: null } },
@@ -110,6 +130,8 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       pendingOverOneMonth: pendingOver1,
       pendingOverTwoMonths: pendingOver2,
       avgDisposalTime,
+      avgPendingTime,
+      oldestPendingDate,
       lastSyncTime,
       lastFailedSyncTime,
       failedSyncCount,
@@ -446,6 +468,10 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     }>();
     const categoryMap = new Map<string, { total: number; pending: number; disposed: number; unknown: number; missingDates: number }>();
 
+    let totalPendingDays = 0;
+    let pendingCountWithDate = 0;
+    let oldestPendingTime: number | null = null;
+
     for (const comp of complaints) {
       // Strict district-scoped PS resolution:
       // 1. policeStationMasterId → name from THIS district's PS map only
@@ -482,12 +508,19 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
         stats.pending++;
         catStats.pending++;
         if (comp.complRegDt) {
-          const days = (now - comp.complRegDt.getTime()) / (1000 * 60 * 60 * 24);
+          const compTime = comp.complRegDt.getTime();
+          const days = (now - compTime) / (1000 * 60 * 60 * 24);
           if (days < 7) stats.u7++;
           else if (days < 15) stats.u15++;
           else if (days < 30) stats.u30++;
           else if (days < 60) stats.o30++;  // 1-2 Months
           else stats.o60++;                 // Over 2 Months
+
+          totalPendingDays += days;
+          pendingCountWithDate++;
+          if (oldestPendingTime === null || compTime < oldestPendingTime) {
+            oldestPendingTime = compTime;
+          }
         } else {
           stats.pendingMissingDates++;
         }
@@ -545,10 +578,15 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
 
     const categories = Array.from(categoryMap.entries()).map(([category, stats]) => ({ category, ...stats }));
 
+    const avgPendingTime = pendingCountWithDate > 0 ? Math.round(totalPendingDays / pendingCountWithDate) : 0;
+    const oldestPendingDate = oldestPendingTime !== null ? new Date(oldestPendingTime) : null;
+
     return {
       district: districtParam || UNMAPPED,
       policeStations,
       categories,
+      avgPendingTime,
+      oldestPendingDate: oldestPendingDate ? oldestPendingDate.toISOString() : null,
     };
     });
 

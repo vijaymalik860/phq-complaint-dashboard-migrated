@@ -146,7 +146,6 @@ export const DistrictDetail = () => {
   const totalDisposed = policeStations.reduce((sum: number, ps: any) => sum + ps.disposed, 0);
   const totalMissingDates = policeStations.reduce((sum: number, ps: any) => sum + (ps.missingDates || 0), 0);
   const totalDisposedWithDate = totalDisposed - totalMissingDates;
-  const totalUnknown = policeStations.reduce((sum: number, ps: any) => sum + (ps.unknown || 0), 0);
   // Aggregate total disposal days from raw ps data using actual counts and days
   // avgDisposalDays from backend is null when no real data exists — do not treat null as 0
   const totalDisposedDays = policeStations.reduce((sum: number, ps: any) => {
@@ -365,17 +364,17 @@ export const DistrictDetail = () => {
                 }, {
                   'Metric': 'Total Disposed', 'Value': totalDisposed
                 }, {
-                  'Metric': 'Disposed (Date Not Found)', 'Value': totalMissingDates
-                }, {
                   'Metric': 'Total Pending', 'Value': totalPending
-                }, {
-                  'Metric': 'Status Not Found', 'Value': totalUnknown
                 }, {
                   'Metric': 'Disposed (% of Total)', 'Value': `${Math.round((totalDisposed / (totalReceived || 1)) * 100)}%`
                 }, {
                   'Metric': 'Pending (% of Total)', 'Value': `${Math.round((totalPending / (totalReceived || 1)) * 100)}%`
                 }, {
                   'Metric': 'Avg. Disposal Time (Days)', 'Value': avgDisposalTime
+                }, {
+                  'Metric': 'Avg. Pending Time (Days)', 'Value': data?.data?.avgPendingTime || 0
+                }, {
+                  'Metric': 'Oldest Pending Complaint', 'Value': data?.data?.oldestPendingDate ? new Date(data.data.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
                 }];
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(execSummary), 'Overview');
 
@@ -484,24 +483,22 @@ export const DistrictDetail = () => {
                 onClick={() => openDrawer(`${district} — Pending`, { district: district!, statusGroup: 'pending', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
               />
               <StatCard
-                label="Disposed but Date Not Found"
-                value={totalMissingDates.toLocaleString()}
-                subValue={`${Math.round((totalMissingDates / (totalReceived || 1)) * 100)}% of Total Received`}
+                label="Avg. Pending Time"
+                value={`${data?.data?.avgPendingTime || 0} Days`}
+                subValue="Only for pending complaints with valid date"
                 colorClass="yellow"
-                onClick={() => openDrawer(`${district} — Date Not Found`, { district: district!, statusGroup: 'disposed_missing_date', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
               />
               <StatCard
-                label="Status Not Found"
-                value={totalUnknown.toLocaleString()}
-                subValue={`${Math.round((totalUnknown / (totalReceived || 1)) * 100)}% of Total Received`}
-                colorClass="yellow"
-                onClick={() => openDrawer(`${district} — Status NF`, { district: district!, statusGroup: 'unknown', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
+                label="Oldest Pending Complaint"
+                value={data?.data?.oldestPendingDate ? new Date(data.data.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                subValue="Registration date of oldest pending case"
+                colorClass="purple"
               />
               <StatCard
                 label="Avg. Disposal Time"
                 value={avgDisposalTime !== null ? `${avgDisposalTime} Days` : '—'}
                 subValue="Only for records where date was found"
-                colorClass="purple"
+                colorClass="teal"
               />
             </div>
 

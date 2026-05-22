@@ -602,9 +602,11 @@ export const DashboardPage = () => {
                 }, {
                   'Metric': 'Clearance Rate', 'Value': `${Math.round(((s?.totalDisposed || 0) / (s?.totalReceived || 1)) * 100)}%`
                 }, {
-                  'Metric': 'Disposed Missing Date', 'Value': s?.disposedMissingDateCount || 0
-                }, {
                   'Metric': 'Avg. Disposal Time (Days)', 'Value': s?.avgDisposalTime || 0
+                }, {
+                  'Metric': 'Avg. Pending Time (Days)', 'Value': s?.avgPendingTime || 0
+                }, {
+                  'Metric': 'Oldest Pending Complaint', 'Value': s?.oldestPendingDate ? new Date(s.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
                 }];
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryDataSheet), 'Summary');
 
@@ -731,18 +733,16 @@ export const DashboardPage = () => {
               onClick={() => openDrawer('Pending Complaints', drawerFiltersForStatus('pending'))}
             />
             <StatCard
-              label="Status Not Found"
-              value={(s?.totalUnknown || 0).toLocaleString()}
-              subValue="Status was not found in the record"
+              label="Avg. Pending Time"
+              value={`${s?.avgPendingTime || 0} Days`}
+              subValue="Only for records where date was found"
               colorClass="yellow"
-              onClick={() => openDrawer('Status Not Found Complaints', drawerFiltersForStatus('unknown'))}
             />
             <StatCard
-              label="Disposal Date Not Found"
-              value={(s?.disposedMissingDateCount || 0).toLocaleString()}
-              subValue={`${Math.round(((s?.disposedMissingDateCount || 0) / (s?.totalReceived || 1)) * 100)}% of Total Received`}
+              label="Oldest Pending Complaint"
+              value={s?.oldestPendingDate ? new Date(s.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+              subValue="Registration date of oldest pending case"
               colorClass="purple"
-              onClick={() => openDrawer('Disposed — Date Not Found', drawerFiltersForStatus('disposed_missing_date'))}
             />
             <StatCard
               label="Avg. Disposal Time"
