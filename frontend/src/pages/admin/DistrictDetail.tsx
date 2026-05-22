@@ -493,6 +493,13 @@ export const DistrictDetail = () => {
                 value={data?.data?.oldestPendingDate ? new Date(data.data.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                 subValue="Registration date of oldest pending case"
                 colorClass="purple"
+                onClick={() => openDrawer(`${district} — Oldest Pending`, {
+                  district: district!,
+                  statusGroup: 'pending',
+                  sortBy: 'complRegDt',
+                  sortOrder: 'asc',
+                  ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
+                })}
               />
               <StatCard
                 label="Avg. Disposal Time"

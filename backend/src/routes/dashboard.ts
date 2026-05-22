@@ -81,12 +81,17 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     `;
     const avgPendingTime = Math.round(Number(avgPendingResult[0]?.avg_days ?? 0));
 
-    // Calculate Oldest Pending Complaint Date
-    const oldestPendingResult = await prisma.complaint.aggregate({
+    // Calculate Oldest Pending Complaint Date and its District name
+    const oldestPendingComplaint = await prisma.complaint.findFirst({
       where: withAnd(baseWhere, { statusGroup: 'pending', complRegDt: { not: null } }),
-      _min: { complRegDt: true },
+      orderBy: { complRegDt: 'asc' },
+      select: { complRegDt: true, districtMasterId: true },
     });
-    const oldestPendingDate = oldestPendingResult._min.complRegDt;
+    const oldestPendingDate = oldestPendingComplaint?.complRegDt ?? null;
+    const districtMapById = await getDistrictNameByIdMap();
+    const oldestPendingDistrict = oldestPendingComplaint?.districtMasterId
+      ? (districtMapById.get(oldestPendingComplaint.districtMasterId.toString()) || UNMAPPED)
+      : UNMAPPED;
 
     // Last successful sync time — shown in the dashboard header (PR #4)
     const lastSuccessfulSync = await prisma.syncRun.findFirst({
@@ -132,6 +137,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       avgDisposalTime,
       avgPendingTime,
       oldestPendingDate,
+      oldestPendingDistrict,
       lastSyncTime,
       lastFailedSyncTime,
       failedSyncCount,

@@ -18,6 +18,8 @@ export interface DrawerFilters {
   unmappedPs?: string;
   psName?: string;
   search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface Props {
@@ -166,7 +168,7 @@ export const ComplaintsDrawer = ({ open, title, filters, onClose }: Props) => {
       filters.statusGroup, filters.districtIds, filters.district,
       filters.policeStationIds, filters.officeIds, filters.classOfIncident,
       filters.fromDate, filters.toDate, filters.pendencyAge, filters.disposalAge,
-      filters.unmappedPs, filters.psName,
+      filters.unmappedPs, filters.psName, filters.sortBy, filters.sortOrder,
     ],
     queryFn: () => cctnsApi.listPaginated({
       page, limit,
@@ -186,8 +188,8 @@ export const ComplaintsDrawer = ({ open, title, filters, onClose }: Props) => {
       disposalAge:      filters.disposalAge      || undefined,
       unmappedPs:       filters.unmappedPs       || undefined,
       psName:           filters.psName           || undefined,
-      sortBy: 'complRegDt',
-      sortOrder: 'desc',
+      sortBy:           filters.sortBy           || 'complRegDt',
+      sortOrder:        filters.sortOrder        || 'desc',
     }),
     enabled: open,
     staleTime: 30_000,

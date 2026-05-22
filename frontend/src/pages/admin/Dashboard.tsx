@@ -738,11 +738,16 @@ export const DashboardPage = () => {
               subValue="Only for records where date was found"
               colorClass="yellow"
             />
-            <StatCard
+             <StatCard
               label="Oldest Pending Complaint"
-              value={s?.oldestPendingDate ? new Date(s.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+              value={s?.oldestPendingDate ? `${new Date(s.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} (${s.oldestPendingDistrict || 'Unmapped'})` : '—'}
               subValue="Registration date of oldest pending case"
               colorClass="purple"
+              onClick={() => openDrawer('Oldest Pending Complaints', {
+                ...drawerFiltersForStatus('pending'),
+                sortBy: 'complRegDt',
+                sortOrder: 'asc',
+              })}
             />
             <StatCard
               label="Avg. Disposal Time"
