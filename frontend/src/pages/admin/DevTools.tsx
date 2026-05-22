@@ -137,7 +137,7 @@ const DevTools = () => {
             ? <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block', flexShrink: 0 }} />
             : <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           }
-          {status === 'triggering' ? 'Sending...' : status === 'running' ? 'Deploying...' : 'Deploy Latest Code'
+          {status === 'triggering' ? 'Sending...' : status === 'running' ? 'Deploying...' : 'Deploy - Latest Code'}
         </button>
 
         {banner && (
