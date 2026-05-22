@@ -686,4 +686,47 @@ if (-not $frontendHealthy) {
 # ── Done ──────────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "=================================================================" -ForegroundColor Green
-Write-
+Write-Host "              INSTALLATION COMPLETE!                            " -ForegroundColor Green
+Write-Host "=================================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Application  : Grievance Monitoring System" -ForegroundColor White
+Write-Host "  Department   : Haryana Police Headquarters" -ForegroundColor White
+Write-Host ""
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host "  |  PORTAL URLs (both are running in the background)      |" -ForegroundColor Cyan
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  |  >> FRONTEND  : http://localhost:$FrontendPort           |" -ForegroundColor Yellow
+Write-Host "  |  >> BACKEND   : http://localhost:$AppPort             |" -ForegroundColor Yellow
+Write-Host "  |  >> API       : http://localhost:$AppPort/api         |" -ForegroundColor Yellow
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  |  Login        : admin / admin123                        |" -ForegroundColor Green
+Write-Host "  |  Database     : phq_dashboard @ localhost:$DbPort       |" -ForegroundColor White
+Write-Host "  |  Install Dir  : $InstallDir                |" -ForegroundColor White
+Write-Host "  |                                                         |" -ForegroundColor Cyan
+Write-Host "  +---------------------------------------------------------+" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  NOTE: Both portals run via PM2 in the background." -ForegroundColor DarkGray
+Write-Host "        Closing this window will NOT stop them." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  Useful commands:" -ForegroundColor White
+Write-Host "    pm2 status                      - check all running processes"
+Write-Host "    pm2 logs grievance-backend      - view backend live logs"
+Write-Host "    pm2 logs grievance-frontend     - view frontend live logs"
+Write-Host "    pm2 restart grievance-backend   - restart backend"
+Write-Host "    pm2 restart grievance-frontend  - restart frontend"
+Write-Host ""
+Write-Host "  For future updates run: deploy.bat"
+Write-Host ""
+Write-Host "  Both portals will automatically restart when Windows reboots." -ForegroundColor DarkGray
+Write-Host ""
+
+# ── Keep window open until user is ready ─────────────────────────────────────
+# PM2 manages both processes independently; pressing a key here only
+# closes this installer window - the portals keep running.
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host "  Press any key to close this installer window.                  " -ForegroundColor Magenta
+Write-Host "  (The backend and frontend portals will keep running.)          " -ForegroundColor Magenta
+Write-Host "=================================================================" -ForegroundColor Magenta
+Write-Host ""
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
