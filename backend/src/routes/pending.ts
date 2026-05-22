@@ -87,13 +87,22 @@ export const pendingRoutes = async (fastify: FastifyInstance) => {
     return handlePaginatedRequest(request, reply, where);
   });
 
-  fastify.get('/pending/7-14-days', { preHandler: [authenticate] }, async (request, reply) => {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo  = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  fastify.get('/pending/missing', { preHandler: [authenticate] }, async (request, reply) => {
     const where = {
       ...buildPrismaWhereClause(request.query as any),
       statusGroup: 'pending' as const,
-      complRegDt: { lte: sevenDaysAgo, gt: fourteenDaysAgo },
+      complRegDt: null,
+    };
+    return handlePaginatedRequest(request, reply, where);
+  });
+
+  fastify.get('/pending/7-15-days', { preHandler: [authenticate] }, async (request, reply) => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const fifteenDaysAgo  = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const where = {
+      ...buildPrismaWhereClause(request.query as any),
+      statusGroup: 'pending' as const,
+      complRegDt: { lte: sevenDaysAgo, gt: fifteenDaysAgo },
     };
     return handlePaginatedRequest(request, reply, where);
   });
@@ -138,6 +147,12 @@ export const pendingRoutes = async (fastify: FastifyInstance) => {
     return handlePaginatedRequest(request, reply, where);
   });
 
+  fastify.get('/pending/branch/:branch/missing', { preHandler: [authenticate] }, async (request, reply) => {
+    const { branch } = request.params as { branch: string };
+    const where = { ...buildPrismaWhereClause(request.query as any), branch, statusGroup: 'pending' as const, complRegDt: null };
+    return handlePaginatedRequest(request, reply, where);
+  });
+
   fastify.get('/pending/branch/:branch/under-7-days', { preHandler: [authenticate] }, async (request, reply) => {
     const { branch } = request.params as { branch: string };
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -145,11 +160,11 @@ export const pendingRoutes = async (fastify: FastifyInstance) => {
     return handlePaginatedRequest(request, reply, where);
   });
 
-  fastify.get('/pending/branch/:branch/7-14-days', { preHandler: [authenticate] }, async (request, reply) => {
+  fastify.get('/pending/branch/:branch/7-15-days', { preHandler: [authenticate] }, async (request, reply) => {
     const { branch } = request.params as { branch: string };
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo  = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-    const where = { ...buildPrismaWhereClause(request.query as any), branch, statusGroup: 'pending' as const, complRegDt: { lte: sevenDaysAgo, gt: fourteenDaysAgo } };
+    const fifteenDaysAgo  = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const where = { ...buildPrismaWhereClause(request.query as any), branch, statusGroup: 'pending' as const, complRegDt: { lte: sevenDaysAgo, gt: fifteenDaysAgo } };
     return handlePaginatedRequest(request, reply, where);
   });
 

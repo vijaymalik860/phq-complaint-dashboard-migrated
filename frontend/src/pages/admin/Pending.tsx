@@ -7,10 +7,11 @@ import { useFilters } from '@/contexts/FilterContext';
 
 const tabs = [
   { id: 'all',           label: 'All Pending' },
-  { id: 'under-7-days',  label: 'Within 7 Days' },
-  { id: '7-14-days',     label: 'Within 14 Days' },
-  { id: '15-30-days',    label: 'Within 30 Days' },
-  { id: '30-60-days',    label: 'Within 2 Months' },
+  { id: 'missing',       label: 'Date Not Found' },
+  { id: 'under-7-days',  label: '< 7 Days' },
+  { id: '7-15-days',     label: '7 - 15 Days' },
+  { id: '15-30-days',    label: '15 - 30 Days' },
+  { id: '30-60-days',    label: '1 - 2 Months' },
   { id: 'over-60-days',  label: 'Over 2 Months' },
   { id: 'branch',        label: 'By Branch' },
 ];
