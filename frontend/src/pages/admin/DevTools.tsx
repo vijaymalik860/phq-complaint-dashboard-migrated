@@ -31,13 +31,13 @@ function lineColor(line: string): string {
 const POLL_MS = 5000;
 
 const DevTools = () => {
-  const [log, setLog]                   = useState('');
+  const [log, setLog] = useState('');
   const [logUpdatedAt, setLogUpdatedAt] = useState<string | null>(null);
-  const [logLoading, setLogLoading]     = useState(false);
-  const [status, setStatus]             = useState<DeployStatus>('idle');
-  const [errorMsg, setErrorMsg]         = useState('');
+  const [logLoading, setLogLoading] = useState(false);
+  const [status, setStatus] = useState<DeployStatus>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const logBoxRef  = useRef<HTMLPreElement>(null);
+  const logBoxRef = useRef<HTMLPreElement>(null);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
@@ -95,8 +95,8 @@ const DevTools = () => {
 
   const getBanner = () => {
     if (status === 'success') return { bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', color: '#86efac', text: 'Deployment successful! Press Ctrl+Shift+R to load the latest version.' };
-    if (status === 'failed')  return { bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.3)',  color: '#fca5a5', text: 'Deployment failed — previous version automatically restored. Check log below.' };
-    if (status === 'error')   return { bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.3)',  color: '#fca5a5', text: errorMsg };
+    if (status === 'failed') return { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', color: '#fca5a5', text: 'Deployment failed — previous version automatically restored. Check log below.' };
+    if (status === 'error') return { bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', color: '#fca5a5', text: errorMsg };
     if (status === 'running') return { bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)', color: '#93c5fd', text: 'Deployment in progress... Log auto-refreshes every 5 seconds.' };
     return null;
   };
@@ -137,7 +137,7 @@ const DevTools = () => {
             ? <span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block', flexShrink: 0 }} />
             : <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           }
-          {status === 'triggering' ? 'Sending...' : status === 'running' ? 'Deploying...' : 'Deploy Latest Code'}
+          {status === 'triggering' ? 'Sending...' : status === 'running' ? 'Deploying...' : 'Deploy Latest-Code'}
         </button>
 
         {banner && (
