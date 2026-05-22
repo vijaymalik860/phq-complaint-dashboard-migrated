@@ -35,7 +35,6 @@ async function scheduledTaskExists(): Promise<boolean> {
  * Throws a descriptive error if admin rights are insufficient.
  */
 async function createScheduledTask(deployBat: string, projectRoot: string): Promise<void> {
-  // Escape single-quotes in paths for the PowerShell string literals
   const batEsc  = deployBat.replace(/'/g, "''");
   const rootEsc = projectRoot.replace(/'/g, "''");
 
@@ -54,8 +53,34 @@ async function createScheduledTask(deployBat: string, projectRoot: string): Prom
   );
 }
 
+/** Spawns a process and resolves with { ok, stderr, code } — never throws. */
+function trySpawn(
+  cmd: string,
+  args: string[],
+  opts: { cwd?: string; windowsHide?: boolean } = {}
+): Promise<{ ok: boolean; stderr: string; code: number | null }> {
+  return new Promise((resolve) => {
+    let stderrBuf = '';
+    const child = spawn(cmd, args, {
+      cwd:         opts.cwd,
+      detached:    false,
+      stdio:       ['ignore', 'ignore', 'pipe'],
+      windowsHide: opts.windowsHide ?? true,
+      shell:       false,
+    });
+    child.stderr?.on('data', (d: Buffer) => { stderrBuf += d.toString(); });
+    child.on('error',  (err) => resolve({ ok: false, stderr: err.message,     code: null }));
+    child.on('close',  (code) => resolve({ ok: code === 0, stderr: stderrBuf.trim(), code }));
+  });
+}
+
 /**
- * Ensures the PHQDeploy task exists (auto-creates if missing), then fires it.
+ * Fires deploy.bat using up to three strategies in order:
+ *   1. schtasks /run /tn PHQDeploy   (requires admin rights)
+ *   2. PowerShell Start-ScheduledTask (alternative elevation path)
+ *   3. Direct detached spawn of deploy.bat  (always works; safe because
+ *      deploy.bat uses `pm2 stop` -- not `pm2 kill` -- so the PM2 daemon
+ *      and its Job Object stay alive throughout the deployment)
  */
 async function triggerDeploy(log: (msg: string) => void): Promise<void> {
   const projectRoot = getProjectRoot();
@@ -65,51 +90,68 @@ async function triggerDeploy(log: (msg: string) => void): Promise<void> {
     throw new Error(`deploy.bat not found at: ${deployBat}`);
   }
 
-  // ── 1. Ensure scheduled task exists ────────────────────────────────────────
+  // Ensure scheduled task exists (best-effort; failures are non-fatal)
   const exists = await scheduledTaskExists();
-  if (exists) {
-    log('[deploy] PHQDeploy scheduled task found.');
-  } else {
-    log('[deploy] PHQDeploy task not found — attempting auto-registration...');
+  if (!exists) {
+    log('[deploy] PHQDeploy task not found -- attempting auto-registration...');
     try {
       await createScheduledTask(deployBat, projectRoot);
       log('[deploy] PHQDeploy scheduled task created successfully.');
-    } catch (err: any) {
-      throw new Error(
-        `The PHQDeploy scheduled task does not exist and could not be created automatically ` +
-        `(Administrator / SYSTEM rights are required). ` +
-        `Re-run install.bat as Administrator on the server to fix this once.`
-      );
+    } catch {
+      log('[deploy] Could not auto-create PHQDeploy task (no admin rights). Will try direct spawn.');
     }
+  } else {
+    log('[deploy] PHQDeploy scheduled task found.');
   }
 
-  // ── 2. Fire the task ────────────────────────────────────────────────────────
-  log('[deploy] Triggering PHQDeploy via schtasks /run ...');
+  // Strategy 1: schtasks /run
+  log('[deploy] Strategy 1: schtasks /run /tn PHQDeploy ...');
+  const r1 = await trySpawn('schtasks', ['/run', '/tn', 'PHQDeploy', '/f']);
+  if (r1.ok) {
+    log('[deploy] PHQDeploy task triggered via schtasks. Deployment started.');
+    return;
+  }
+  log(`[deploy] schtasks failed (code ${r1.code}): ${r1.stderr || '(no stderr)'}. Trying Strategy 2...`);
 
+  // Strategy 2: PowerShell Start-ScheduledTask
+  log('[deploy] Strategy 2: PowerShell Start-ScheduledTask ...');
+  const r2 = await trySpawn('powershell', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+    "Start-ScheduledTask -TaskName 'PHQDeploy' -ErrorAction Stop",
+  ]);
+  if (r2.ok) {
+    log('[deploy] PHQDeploy task triggered via PowerShell. Deployment started.');
+    return;
+  }
+  log(`[deploy] PowerShell failed (code ${r2.code}): ${r2.stderr || '(no stderr)'}. Trying Strategy 3...`);
+
+  // Strategy 3: Direct detached spawn of deploy.bat
+  // This always works regardless of admin rights.
+  // deploy.bat uses `pm2 stop` (not `pm2 kill`) so the PM2 daemon and its
+  // Job Object stay alive throughout; spawning into it is therefore safe.
+  log('[deploy] Strategy 3: Direct detached spawn of deploy.bat ...');
   await new Promise<void>((resolve, reject) => {
-    const child = spawn('schtasks', ['/run', '/tn', 'PHQDeploy', '/f'], {
+    const child = spawn('cmd.exe', ['/c', deployBat], {
+      cwd:         projectRoot,
       detached:    true,
       stdio:       'ignore',
       windowsHide: true,
+      shell:       false,
     });
 
-    child.on('error', (err) =>
-      reject(new Error(`schtasks spawn error: ${err.message}`))
-    );
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        log('[deploy] PHQDeploy task is now running. Deployment started.');
+    let settled = false;
+    child.on('error', (err) => {
+      if (!settled) { settled = true; reject(new Error(`Direct spawn failed: ${err.message}`)); }
+    });
+    // If no spawn error within 600 ms the process is running.
+    setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        child.unref();
+        log('[deploy] deploy.bat launched directly (detached). Deployment started.');
         resolve();
-      } else {
-        reject(new Error(
-          `schtasks exited with code ${code}. ` +
-          `If the issue persists, re-run install.bat as Administrator.`
-        ));
       }
-    });
-
-    child.unref();
+    }, 600);
   });
 }
 
@@ -172,7 +214,7 @@ export async function systemRoutes(app: FastifyInstance) {
 
       if (!fs.existsSync(logPath)) {
         return {
-          log: '(No deploy.log found yet. Trigger a deployment first — the log appears here automatically.)',
+          log: '(No deploy.log found yet. Trigger a deployment first -- the log appears here automatically.)',
           updatedAt: null,
         };
       }
@@ -203,19 +245,19 @@ export async function systemRoutes(app: FastifyInstance) {
       const scriptPath  = path.join(projectRoot, 'deploy.bat');
       const logPath     = path.join(projectRoot, 'logs', 'deploy.log');
 
-      let scheduledTaskExists = false;
-      let scheduledTaskState  = 'unknown';
+      let taskExists = false;
+      let taskState  = 'unknown';
       try {
         const { stdout } = await execFileAsync(
           'schtasks',
           ['/query', '/tn', 'PHQDeploy', '/fo', 'LIST']
         );
-        scheduledTaskExists = stdout.includes('PHQDeploy');
-        const stateMatch    = stdout.match(/Status:\s+(.+)/i);
-        scheduledTaskState  = stateMatch ? stateMatch[1].trim() : 'found';
+        taskExists = stdout.includes('PHQDeploy');
+        const stateMatch = stdout.match(/Status:\s+(.+)/i);
+        taskState = stateMatch ? stateMatch[1].trim() : 'found';
       } catch {
-        scheduledTaskExists = false;
-        scheduledTaskState  = 'NOT FOUND — re-run install.bat as Administrator';
+        taskExists = false;
+        taskState  = 'NOT FOUND -- re-run install.bat as Administrator';
       }
 
       return {
@@ -224,9 +266,9 @@ export async function systemRoutes(app: FastifyInstance) {
         deployBatExists:    fs.existsSync(scriptPath),
         deployLogPath:      logPath,
         deployLogExists:    fs.existsSync(logPath),
-        scheduledTaskExists,
-        scheduledTaskState,
-        triggerMethod:      'schtasks /run /tn PHQDeploy',
+        scheduledTaskExists: taskExists,
+        scheduledTaskState:  taskState,
+        triggerMethod:      'multi-strategy (schtasks -> PowerShell -> direct spawn)',
         nodeVersion:        process.version,
         platform:           process.platform,
       };
