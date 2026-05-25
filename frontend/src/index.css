@@ -926,8 +926,8 @@ body {
 .stat-card.purple { background: linear-gradient(135deg, #ee0979, #ff6a00); }
 .stat-card.teal { background: linear-gradient(135deg, #0d9488, #14b8a6); }
 .stat-card.indigo { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
-.stat-card.pink { background: linear-gradient(135deg, #ec4899, #d946ef); color: #ffffff; }
-.stat-card.pink .stat-card-value { color: #ffffff; }
+.stat-card.pink { background: linear-gradient(135deg, #ec4899, #d946ef); color: #000000; }
+.stat-card.pink .stat-card-value { color: #000000; }
 
 
 
