@@ -888,8 +888,8 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
     const skip = (pageNum - 1) * limitNum;
 
-    // Clean up stale 'running' jobs (older than 1 hour) killed by Vercel timeouts
-    const staleTime = new Date(Date.now() - 60 * 60 * 1000);
+    // Clean up stale 'running' jobs (older than 24 hours) as a failsafe for server restarts
+    const staleTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
       await prisma.syncRun.updateMany({
         where: {

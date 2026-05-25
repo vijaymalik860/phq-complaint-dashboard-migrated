@@ -1,8 +1,10 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GlobalFilterBar } from './GlobalFilterBar';
 import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { cctnsApi } from '../../services/api';
 export { useChartExpand } from '../../contexts/ChartContext';
 
 interface LayoutProps {
@@ -25,6 +27,97 @@ export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { filters } = useFilters();
+
+  const [activeJobId, setActiveJobId] = useState<string | null>(() => localStorage.getItem('cctnsActiveJobId'));
+  const [jobStatus, setJobStatus] = useState<string>(() => localStorage.getItem('cctnsActiveJobId') ? 'pending' : '');
+  const [jobProgress, setJobProgress] = useState<string>('');
+  const [jobPercent, setJobPercent] = useState<number>(0);
+  const [jobError, setJobError] = useState<string>('');
+  const [jobResult, setJobResult] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Poll localStorage change in case sync is triggered on CCTNS tab
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const id = localStorage.getItem('cctnsActiveJobId');
+      setActiveJobId(id);
+      if (id) {
+        setJobStatus(localStorage.getItem('cctnsActiveJobStatus') || 'pending');
+      } else {
+        setJobStatus('');
+        setJobProgress('');
+        setJobPercent(0);
+        setJobError('');
+        setJobResult(null);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on an interval in case storage event doesn't fire on same window
+    const interval = setInterval(handleStorageChange, 1000);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const jobQuery = useQuery({
+    queryKey: ['global-cctns-fetch-job', activeJobId],
+    queryFn: () => {
+      if (!activeJobId) throw new Error('No active job');
+      return cctnsApi.fetchStatus(activeJobId);
+    },
+    enabled: !!activeJobId,
+    refetchInterval: (query) => {
+      if (query.state.status === 'error' || query.state.error) return false;
+      const status = query.state.data?.data?.status;
+      if (status === 'success' || status === 'error') return false;
+      return 2000;
+    },
+  });
+
+  useEffect(() => {
+    if (jobQuery.isError) {
+      const error: any = jobQuery.error;
+      if (error?.response?.status === 404) {
+        localStorage.removeItem('cctnsActiveJobId');
+        localStorage.removeItem('cctnsJobStartedAt');
+        localStorage.removeItem('cctnsActiveJobStatus');
+        setActiveJobId(null);
+        setJobStatus('');
+      } else {
+        setJobStatus('error');
+        setJobError('Failed to fetch job status');
+      }
+    } else if (jobQuery.data?.data) {
+      const data = jobQuery.data.data;
+      setJobStatus(data.status);
+      localStorage.setItem('cctnsActiveJobStatus', data.status);
+      setJobProgress(data.progress || '');
+      setJobPercent(data.progressPercentage || 0);
+      setJobError(data.error || '');
+      setJobResult(data.result || null);
+
+      if (data.status === 'success' || data.status === 'error') {
+        queryClient.invalidateQueries({ queryKey: ['cctns-synced'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-history'] });
+        queryClient.invalidateQueries({ queryKey: ['cctns-last-sync-date'] });
+        
+        if (pollRef.current) clearTimeout(pollRef.current);
+        pollRef.current = setTimeout(() => {
+          localStorage.removeItem('cctnsActiveJobId');
+          localStorage.removeItem('cctnsJobStartedAt');
+          localStorage.removeItem('cctnsActiveJobStatus');
+          setActiveJobId(null);
+          setJobStatus('');
+          setJobProgress('');
+          setJobPercent(0);
+          setJobError('');
+          setJobResult(null);
+        }, 5000);
+      }
+    }
+  }, [jobQuery.data, jobQuery.isError, jobQuery.error, queryClient]);
 
   // Count how many independent filter groups are set
   const activeFilterCount = [
@@ -122,6 +215,51 @@ export const Layout = ({ children }: LayoutProps) => {
           </svg>
         </button>
       </header>
+
+      {activeJobId && (
+        <div style={{
+          background: 'rgba(30,41,59,0.7)',
+          backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid rgba(59,130,246,0.3)',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          fontSize: '13px',
+          color: '#cbd5e1',
+          zIndex: 99,
+          position: 'relative',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+        }}>
+          <span style={{
+            width: 10, height: 10, borderRadius: '50%',
+            background: jobStatus === 'success' ? '#22c55e' : jobStatus === 'error' ? '#ef4444' : '#3b82f6',
+            boxShadow: jobStatus === 'success' || jobStatus === 'error' ? 'none' : '0 0 0 0 rgba(59,130,246,0.6)',
+            animation: jobStatus === 'success' || jobStatus === 'error' ? 'none' : 'syncPulse 1.4s ease-out infinite',
+            flexShrink: 0,
+          }} />
+          <span style={{ fontWeight: 500 }}>
+            {jobStatus === 'pending' ? 'Sync job queued — starting shortly...' :
+             jobStatus === 'running' ? `Sync in progress: ${jobProgress || 'Processing...'}` :
+             jobStatus === 'success' ? '✓ Sync completed successfully!' :
+             `✕ Sync failed: ${jobError || 'Error occurred'}`}
+          </span>
+          <div style={{ flex: 1, background: 'rgba(59,130,246,0.15)', borderRadius: 6, height: 8, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              background: jobStatus === 'success' ? '#22c55e' : jobStatus === 'error' ? '#ef4444' : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+              width: `${jobStatus === 'success' ? 100 : (jobPercent || (jobStatus === 'running' ? 5 : 2))}%`,
+              transition: 'width 0.5s ease',
+              borderRadius: 6
+            }} />
+          </div>
+          {jobResult && (
+            <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+              Fetched: <strong>{jobResult.fetched.toLocaleString()}</strong> | Saved: <strong style={{ color: '#4ade80' }}>{(jobResult.created + jobResult.updated).toLocaleString()}</strong> | Errors: <strong style={{ color: jobResult.errors > 0 ? '#f87171' : '#64748b' }}>{jobResult.errors}</strong>
+            </span>
+          )}
+        </div>
+      )}
 
       {filterBarOpen && (
         <div className="filter-bar-expanded">
