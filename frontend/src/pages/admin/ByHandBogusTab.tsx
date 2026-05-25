@@ -63,8 +63,8 @@ for (const c of COLS) { if (FROZEN_KEYS.includes(c.key)) { FROZEN_LEFT[c.key]=_a
 const MIN_W = COLS.reduce((s,c)=>s+c.w,0);
 
 const STATUS_CLR: Record<string,{bg:string;col:string}> = {
-  disposed: {bg:'rgba(52,211,153,0.12)',col:'#34d399'},
-  pending:  {bg:'rgba(248,113,113,0.12)',col:'#f87171'},
+  disposed: {bg:'rgba(16, 185, 129, 0.12)',col:'var(--success)'},
+  pending:  {bg:'rgba(239, 68, 68, 0.12)',col:'var(--danger)'},
 };
 
 type QFField = 'name'|'mobile'|'district'|'ps'|'address'|'gender'|'complaintNumber';
@@ -139,14 +139,15 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
   };
 
   const ctrl: React.CSSProperties = {
-    background:'#1e293b', border:'1px solid #334155', borderRadius:6,
-    color:'#e2e8f0', padding:'5px 9px', fontSize:12, outline:'none', cursor:'pointer',
+    background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6,
+    color: 'var(--text-primary)', padding: '5px 9px', fontSize: 12, outline: 'none', cursor: 'pointer',
   };
-  const navBtn = (dis:boolean, fn:()=>void, lbl:string) => (
+  const navBtn = (dis: boolean, fn: () => void, lbl: string) => (
     <button onClick={fn} disabled={dis} style={{
-      padding:'3px 8px', background:dis?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.1)',
-      color:dis?'#475569':'#e2e8f0', border:'1px solid #334155',
-      borderRadius:4, cursor:dis?'not-allowed':'pointer', fontSize:13,
+      padding: '3px 8px', background: dis ? 'var(--bg-input)' : 'var(--bg-hover)',
+      opacity: dis ? 0.4 : 1,
+      color: dis ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border)',
+      borderRadius: 4, cursor: dis ? 'not-allowed' : 'pointer', fontSize: 13,
     }}>{lbl}</button>
   );
 
@@ -176,9 +177,9 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
         <button onClick={()=>setShowBuilder(b=>!b)} style={{
           display:'flex',alignItems:'center',gap:5,flexShrink:0,
           padding:'5px 10px',fontSize:11,fontWeight:500,
-          background:showBuilder?'rgba(99,102,241,0.2)':'rgba(255,255,255,0.06)',
-          border:`1px solid ${showBuilder?'rgba(99,102,241,0.5)':'#334155'}`,
-          borderRadius:6,color:showBuilder?'#818cf8':'#94a3b8',cursor:'pointer',
+          background:showBuilder?'rgba(99,102,241,0.2)':'var(--bg-hover)',
+          border:`1px solid ${showBuilder?'rgba(99,102,241,0.5)':'var(--border)'}`,
+          borderRadius:6,color:showBuilder?'#818cf8':'var(--text-secondary)',cursor:'pointer',
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -190,9 +191,9 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
         <button onClick={handleExportCSV} disabled={!rows.length} style={{
           display:'flex',alignItems:'center',gap:5,flexShrink:0,
           padding:'5px 10px',fontSize:11,fontWeight:500,
-          background:rows.length?'rgba(99,102,241,0.15)':'rgba(255,255,255,0.03)',
-          color:rows.length?'#818cf8':'#475569',
-          border:`1px solid ${rows.length?'rgba(99,102,241,0.4)':'#1e293b'}`,
+          background:rows.length?'rgba(99,102,241,0.15)':'var(--bg-input)',
+          color:rows.length?'#818cf8':'var(--text-muted)',
+          border:`1px solid ${rows.length?'rgba(99,102,241,0.4)':'var(--border)'}`,
           borderRadius:6,cursor:rows.length?'pointer':'not-allowed',
         }}>
           <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -218,10 +219,10 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
           padding:'8px 10px',background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.25)',
           borderRadius:8,flexShrink:0}}>
           <select value={pendingField} onChange={e=>setPField(e.target.value as QFField)} style={ctrl}>
-            {QF_FIELDS.map(f=><option key={f.key} value={f.key} style={{background:'#1e293b'}}>{f.label}</option>)}
+            {QF_FIELDS.map(f=><option key={f.key} value={f.key} style={{background:'var(--bg-card)', color:'var(--text-primary)'}}>{f.label}</option>)}
           </select>
           <select value={pendingOp} onChange={e=>setPOp(e.target.value as QFOp)} style={ctrl}>
-            {QF_OPS.map(o=><option key={o.key} value={o.key} style={{background:'#1e293b'}}>{o.label}</option>)}
+            {QF_OPS.map(o=><option key={o.key} value={o.key} style={{background:'var(--bg-card)', color:'var(--text-primary)'}}>{o.label}</option>)}
           </select>
           <input type="text" placeholder="Value…" value={pendingValue}
             onChange={e=>setPValue(e.target.value)}
@@ -231,7 +232,7 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
             background:'rgba(99,102,241,0.25)',color:'#818cf8',
             border:'1px solid rgba(99,102,241,0.5)',borderRadius:6,cursor:'pointer'}}>Apply</button>
           <button onClick={()=>setShowBuilder(false)} style={{padding:'5px 8px',fontSize:11,
-            background:'transparent',color:'#64748b',border:'1px solid #334155',borderRadius:6,cursor:'pointer'}}>✕</button>
+            background:'transparent',color:'var(--text-secondary)',border:'1px solid var(--border)',borderRadius:6,cursor:'pointer'}}>✕</button>
         </div>
       )}
 
@@ -241,15 +242,15 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
           {appliedFilters.map(f=>(
             <span key={f.id} style={{display:'inline-flex',alignItems:'center',gap:4,
               padding:'2px 8px 2px 10px',borderRadius:20,fontSize:11,
-              background:'rgba(96,165,250,0.12)',border:'1px solid rgba(96,165,250,0.3)',color:'#93c5fd'}}>
-              <span style={{color:'#60a5fa',fontWeight:600}}>{QF_FIELDS.find(x=>x.key===f.field)?.label}</span>
-              <span style={{color:'#475569'}}>{f.op.replace('_',' ')}</span>
+              background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text-primary)'}}>
+              <span style={{color:'var(--primary)',fontWeight:600}}>{QF_FIELDS.find(x=>x.key===f.field)?.label}</span>
+              <span style={{color:'var(--text-muted)'}}>{f.op.replace('_',' ')}</span>
               <span>"{f.value}"</span>
-              <button onClick={()=>removeFilter(f.id)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',padding:'0 0 0 4px',fontSize:12,lineHeight:1}}>×</button>
+              <button onClick={()=>removeFilter(f.id)} style={{background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',padding:'0 0 0 4px',fontSize:12,lineHeight:1}}>×</button>
             </span>
           ))}
           <button onClick={()=>{setApplied([]);resetPage();}} style={{padding:'2px 8px',fontSize:11,background:'none',
-            color:'#475569',border:'1px solid #334155',borderRadius:20,cursor:'pointer'}}>Clear all</button>
+            color:'var(--text-secondary)',border:'1px solid var(--border)',borderRadius:20,cursor:'pointer'}}>Clear all</button>
         </div>
       )}
 
@@ -278,15 +279,15 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
           <div style={{flex:1,overflowY:'auto',overflowX:'auto',minHeight:0}}>
             <table style={{borderCollapse:'collapse',fontSize:12,minWidth:MIN_W}}>
               <thead style={{position:'sticky',top:0,zIndex:2}}>
-                <tr style={{background:'#0f172a',borderBottom:'2px solid #1e293b'}}>
+                <tr style={{background:'var(--bg-card)',borderBottom:'2px solid var(--border)'}}>
                   {COLS.map(c=>{
                     const frozen=FROZEN_KEYS.includes(c.key);
                     return <th key={c.key} style={{
-                      padding:'9px 10px',color:'#94a3b8',fontWeight:600,fontSize:11,
+                      padding:'9px 10px',color:'var(--text-secondary)',fontWeight:600,fontSize:11,
                       whiteSpace:'nowrap',textTransform:'uppercase',letterSpacing:'0.04em',
-                      width:c.w,minWidth:c.w,background:'#0f172a',
+                      width:c.w,minWidth:c.w,background:'var(--bg-card)',
                       ...(frozen?{position:'sticky',left:FROZEN_LEFT[c.key],zIndex:3,
-                        boxShadow:c.key==='complRegNum'?'2px 0 4px rgba(0,0,0,0.4)':undefined}:{}),
+                        boxShadow:c.key==='complRegNum'?'2px 0 4px rgba(0,0,0,0.15)':undefined}:{}),
                     }}>{c.label}</th>;
                   })}
                 </tr>
@@ -297,28 +298,28 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
                   const sc=STATUS_CLR[sg]||{bg:'rgba(234,179,8,0.1)',col:'#eab308'};
                   const rowNum=(page-1)*pageSize+i+1;
                   const even=i%2===0;
-                  const rowBg=even?'#0b1120':'#0d1829';
+                  const rowBg=even?'var(--bg-card)':'var(--bg-dark)';
                   return (
-                    <tr key={r.complRegNum||i} style={{background:rowBg,borderBottom:'1px solid rgba(30,41,59,0.7)'}}
-                      onMouseEnter={e=>(e.currentTarget as HTMLTableRowElement).style.background='#162032'}
+                    <tr key={r.complRegNum||i} style={{background:rowBg,borderBottom:'1px solid var(--border)'}}
+                      onMouseEnter={e=>(e.currentTarget as HTMLTableRowElement).style.background='var(--bg-hover)'}
                       onMouseLeave={e=>(e.currentTarget as HTMLTableRowElement).style.background=rowBg}>
                       {COLS.map(c=>{
                         const frozen=FROZEN_KEYS.includes(c.key);
                         const style: React.CSSProperties={
                           padding:'8px 10px',whiteSpace:'nowrap',
                           ...(frozen?{position:'sticky',left:FROZEN_LEFT[c.key],background:rowBg,zIndex:1,
-                            boxShadow:c.key==='complRegNum'?'2px 0 4px rgba(0,0,0,0.3)':undefined}:{}),
+                            boxShadow:c.key==='complRegNum'?'2px 0 4px rgba(0,0,0,0.12)':undefined}:{}),
                         };
                         let cell:React.ReactNode;
-                        if (c.key==='#') cell=<span style={{color:'#475569'}}>{rowNum}</span>;
-                        else if (c.key==='complRegNum') cell=<span style={{color:'#60a5fa',cursor:'pointer',textDecoration:'underline',fontWeight:600}}
+                        if (c.key==='#') cell=<span style={{color:'var(--text-muted)'}}>{rowNum}</span>;
+                        else if (c.key==='complRegNum') cell=<span style={{color:'var(--primary)',cursor:'pointer',textDecoration:'underline',fontWeight:600}}
                           onClick={()=>openDrawer(`Complaint: ${r.complRegNum}`,{search:r.complRegNum} as any)}>{r.complRegNum}</span>;
                         else if (c.key==='mobile') cell=r.mobile
-                          ?<span style={{color:'#f87171',fontFamily:'monospace',padding:'2px 5px',background:'rgba(239,68,68,0.1)',borderRadius:3}}>{r.mobile}</span>
-                          :<span style={{color:'#ef4444',fontStyle:'italic',fontSize:10}}>NULL</span>;
+                          ?<span style={{color:'var(--danger)',fontFamily:'monospace',padding:'2px 5px',background:'rgba(239,68,68,0.12)',borderRadius:3}}>{r.mobile}</span>
+                          :<span style={{color:'var(--danger)',fontStyle:'italic',fontSize:10}}>NULL</span>;
                         else if (c.key==='statusGroup') cell=<span style={{padding:'2px 8px',borderRadius:4,fontSize:10,fontWeight:600,background:sc.bg,color:sc.col}}>{r.statusGroup||'—'}</span>;
-                        else if (DATE_COLS.has(c.key)) cell=<span style={{color:'#94a3b8'}}>{fmtDate(r[c.key])}</span>;
-                        else { const val=r[c.key]; cell=val!=null&&val!==''?<span style={{color:'#cbd5e1'}}>{String(val)}</span>:<span style={{color:'#334155'}}>—</span>; }
+                        else if (DATE_COLS.has(c.key)) cell=<span style={{color:'var(--text-secondary)'}}>{fmtDate(r[c.key])}</span>;
+                        else { const val=r[c.key]; cell=val!=null&&val!==''?<span style={{color:'var(--text-primary)'}}>{String(val)}</span>:<span style={{color:'var(--text-muted)'}}>—</span>; }
                         return <td key={c.key} style={style}>{cell}</td>;
                       })}
                     </tr>
@@ -331,19 +332,19 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
           {/* ── Sticky Pagination Footer ── */}
           <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',
             flexWrap:'wrap',gap:8,padding:'9px 8px',marginTop:6,
-            borderTop:'1px solid #1e293b',background:'#0d1424',
-            boxShadow:'0 -4px 20px rgba(0,0,0,0.6)',position:'sticky',bottom:0,zIndex:10}}>
+            borderTop:'1px solid var(--border)',background:'var(--bg-card)',
+            boxShadow:'0 -4px 20px rgba(0,0,0,0.15)',position:'sticky',bottom:0,zIndex:10}}>
             <div style={{display:'flex',alignItems:'center',gap:6}}>
-              <span style={{fontSize:11,color:'#64748b',whiteSpace:'nowrap'}}>Rows:</span>
+              <span style={{fontSize:11,color:'var(--text-secondary)',whiteSpace:'nowrap'}}>Rows:</span>
               <select value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));resetPage();}}
-                style={{background:'#1e293b',color:'#e2e8f0',border:'1px solid #334155',borderRadius:4,padding:'3px 5px',fontSize:11,outline:'none'}}>
-                {[20,50,100,200].map(n=><option key={n} value={n} style={{background:'#1e293b'}}>{n}</option>)}
+                style={{background:'var(--bg-input)',color:'var(--text-primary)',border:'1px solid var(--border)',borderRadius:4,padding:'3px 5px',fontSize:11,outline:'none'}}>
+                {[20,50,100,200].map(n=><option key={n} value={n} style={{background:'var(--bg-card)',color:'var(--text-primary)'}}>{n}</option>)}
               </select>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <span style={{fontSize:11,color:'#64748b',whiteSpace:'nowrap'}}>
-                Page <strong style={{color:'#e2e8f0'}}>{page}</strong> / <strong style={{color:'#e2e8f0'}}>{totalPages}</strong>
-                <span style={{color:'#475569'}}> · {total.toLocaleString()} total</span>
+              <span style={{fontSize:11,color:'var(--text-secondary)',whiteSpace:'nowrap'}}>
+                Page <strong style={{color:'var(--text-primary)'}}>{page}</strong> / <strong style={{color:'var(--text-primary)'}}>{totalPages}</strong>
+                <span style={{color:'var(--text-muted)'}}> · {total.toLocaleString()} total</span>
               </span>
               <div style={{display:'flex',gap:3}}>
                 {navBtn(page<=1,         ()=>setPage(1),         '«')}
@@ -351,14 +352,14 @@ export const ByHandBogusTab = ({ activeFilters, openDrawer }: {
                 {navBtn(page>=totalPages,()=>setPage(p=>p+1),   '›')}
                 {navBtn(page>=totalPages,()=>setPage(totalPages),'»')}
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:3,marginLeft:4,borderLeft:'1px solid #1e293b',paddingLeft:8}}>
-                <span style={{fontSize:10,color:'#64748b'}}>Go:</span>
+              <div style={{display:'flex',alignItems:'center',gap:3,marginLeft:4,borderLeft:'1px solid var(--border)',paddingLeft:8}}>
+                <span style={{fontSize:10,color:'var(--text-muted)'}}>Go:</span>
                 <input type="number" min={1} max={totalPages} value={gotoPage}
                   onChange={e=>setGotoPage(e.target.value)}
                   onKeyDown={e=>{if(e.key==='Enter'){const p=parseInt(gotoPage,10);if(!isNaN(p)&&p>=1&&p<=totalPages){setPage(p);setGotoPage('');}}}}
-                  style={{width:42,background:'#1e293b',color:'#e2e8f0',border:'1px solid #334155',borderRadius:4,padding:'2px 4px',fontSize:11,outline:'none',textAlign:'center'}}/>
+                  style={{width:42,background:'var(--bg-input)',color:'var(--text-primary)',border:'1px solid var(--border)',borderRadius:4,padding:'2px 4px',fontSize:11,outline:'none',textAlign:'center'}}/>
                 <button onClick={()=>{const p=parseInt(gotoPage,10);if(!isNaN(p)&&p>=1&&p<=totalPages){setPage(p);setGotoPage('');}}}
-                  style={{padding:'2px 7px',background:'rgba(99,102,241,0.2)',color:'#818cf8',border:'1px solid rgba(99,102,241,0.4)',borderRadius:4,fontSize:10,cursor:'pointer'}}>Go</button>
+                  style={{padding:'2px 7px',background:'rgba(99,102,241,0.15)',color:'var(--primary)',border:'1px solid rgba(99,102,241,0.3)',borderRadius:4,fontSize:10,cursor:'pointer'}}>Go</button>
               </div>
             </div>
           </div>

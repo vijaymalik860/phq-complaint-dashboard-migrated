@@ -885,7 +885,7 @@ export const DashboardPage = () => {
                 <h2 className="text-lg font-bold text-slate-100">Pendency Ageing Matrix</h2>
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>{getPendencyMatrixSubtitle()}</span>
               </div>
-              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px', border: '1px solid #334155', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--bg-dark)', borderRadius: '8px', padding: '3px', border: '1px solid var(--border)', flexShrink: 0 }}>
                 {(['numbers', 'pct'] as const).map((v) => (
                   <button
                     key={v}
@@ -899,7 +899,7 @@ export const DashboardPage = () => {
                       cursor: 'pointer',
                       transition: 'all 0.18s',
                       backgroundColor: pendencyView === v ? '#3b82f6' : 'transparent',
-                      color: pendencyView === v ? '#fff' : '#94a3b8',
+                      color: pendencyView === v ? '#fff' : 'var(--text-secondary)',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -979,7 +979,7 @@ export const DashboardPage = () => {
                 <h2 className="text-lg font-bold text-slate-100">Disposal Time Matrix</h2>
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>{getDisposalMatrixSubtitle()}</span>
               </div>
-              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px', border: '1px solid #334155', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--bg-dark)', borderRadius: '8px', padding: '3px', border: '1px solid var(--border)', flexShrink: 0 }}>
                 {(['numbers', 'pct'] as const).map((v) => (
                   <button
                     key={v}
@@ -993,7 +993,7 @@ export const DashboardPage = () => {
                       cursor: 'pointer',
                       transition: 'all 0.18s',
                       backgroundColor: disposalView === v ? '#10b981' : 'transparent',
-                      color: disposalView === v ? '#fff' : '#94a3b8',
+                      color: disposalView === v ? '#fff' : 'var(--text-secondary)',
                       whiteSpace: 'nowrap',
                     }}
                   >

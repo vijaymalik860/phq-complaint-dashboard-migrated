@@ -292,12 +292,12 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <label style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap' }}>Min</label>
           <select value={minComplaints} onChange={e => { setMinComplaints(Number(e.target.value)); resetPage(); }} style={ctrlStyle}>
-            {[2,3,5,10,20].map(n => <option key={n} value={n} style={{ background: '#1e293b' }}>{n}+</option>)}
+            {[2,3,5,10,20].map(n => <option key={n} value={n} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{n}+</option>)}
           </select>
         </div>
 
         {/* Mobile Validity Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0, borderRadius: 7, overflow: 'hidden', border: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0, borderRadius: 7, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {([
             { key: 'all',     label: 'All Mobiles',    icon: '📱' },
             { key: 'valid',   label: 'Valid Mobile',   icon: '✓' },
@@ -305,17 +305,17 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
           ] as const).map((opt, idx) => {
             const isActive = mobileFilter === opt.key;
             const activeColor =
-              opt.key === 'valid'   ? { bg: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.5)', text: '#34d399' } :
-              opt.key === 'invalid' ? { bg: 'rgba(239,68,68,0.18)',  border: 'rgba(239,68,68,0.5)',  text: '#f87171' } :
-                                      { bg: 'rgba(99,102,241,0.18)', border: 'rgba(99,102,241,0.4)', text: '#818cf8' };
+              opt.key === 'valid'   ? { bg: 'rgba(16,185,129,0.15)', text: 'var(--success)' } :
+              opt.key === 'invalid' ? { bg: 'rgba(239,68,68,0.15)',  text: 'var(--danger)' } :
+                                      { bg: 'rgba(99,102,241,0.15)', text: 'var(--primary)' };
             return (
               <button key={opt.key} onClick={() => { setMobileFilter(opt.key); resetPage(); }} style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', fontSize: 11, fontWeight: isActive ? 600 : 400,
-                background:  isActive ? activeColor.bg  : 'rgba(255,255,255,0.04)',
-                color:       isActive ? activeColor.text : '#64748b',
+                background:  isActive ? activeColor.bg  : 'var(--bg-input)',
+                color:       isActive ? activeColor.text : 'var(--text-muted)',
                 border: 'none',
-                borderRight: idx < 2 ? '1px solid #334155' : 'none',
+                borderRight: idx < 2 ? '1px solid var(--border)' : 'none',
                 cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
               }}>
                 <span style={{ fontSize: opt.key === 'all' ? 10 : 12, lineHeight: 1 }}>{opt.icon}</span>
@@ -329,9 +329,9 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
         <button onClick={() => setShowBuilder(b => !b)} style={{
           display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
           padding: '5px 10px', fontSize: 11, fontWeight: 500,
-          background: showBuilder ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)',
-          border: `1px solid ${showBuilder ? 'rgba(99,102,241,0.5)' : '#334155'}`,
-          borderRadius: 6, color: showBuilder ? '#818cf8' : '#94a3b8', cursor: 'pointer',
+          background: showBuilder ? 'rgba(99,102,241,0.2)' : 'var(--bg-hover)',
+          border: `1px solid ${showBuilder ? 'rgba(99,102,241,0.5)' : 'var(--border)'}`,
+          borderRadius: 6, color: showBuilder ? '#818cf8' : 'var(--text-secondary)', cursor: 'pointer',
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -356,10 +356,10 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
           padding: '8px 10px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)',
           borderRadius: 8, flexShrink: 0 }}>
           <select value={pendingField} onChange={e => setPendingField(e.target.value as QFField)} style={ctrlStyle}>
-            {QF_FIELDS.map(f => <option key={f.key} value={f.key} style={{ background: '#1e293b' }}>{f.label}</option>)}
+            {QF_FIELDS.map(f => <option key={f.key} value={f.key} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{f.label}</option>)}
           </select>
           <select value={pendingOp} onChange={e => setPendingOp(e.target.value as QFOp)} style={ctrlStyle}>
-            {QF_OPS.map(o => <option key={o.key} value={o.key} style={{ background: '#1e293b' }}>{o.label}</option>)}
+            {QF_OPS.map(o => <option key={o.key} value={o.key} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{o.label}</option>)}
           </select>
           <input
             type="text" placeholder="Value…" value={pendingValue}
@@ -374,7 +374,7 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
           }}>Apply</button>
           <button onClick={() => setShowBuilder(false)} style={{
             padding: '5px 8px', fontSize: 11, background: 'transparent',
-            color: '#64748b', border: '1px solid #334155', borderRadius: 6, cursor: 'pointer',
+            color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer',
           }}>✕</button>
         </div>
       )}
@@ -386,20 +386,20 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
             <span key={f.id} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '2px 8px 2px 10px', borderRadius: 20, fontSize: 11,
-              background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.3)', color: '#93c5fd',
+              background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-primary)',
             }}>
-              <span style={{ color: '#60a5fa', fontWeight: 600 }}>{QF_FIELDS.find(x => x.key === f.field)?.label}</span>
-              <span style={{ color: '#475569' }}>{f.op.replace('_',' ')}</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{QF_FIELDS.find(x => x.key === f.field)?.label}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{f.op.replace('_',' ')}</span>
               <span>"{f.value}"</span>
               <button onClick={() => removeFilter(f.id)} style={{
-                background: 'none', border: 'none', color: '#475569', cursor: 'pointer',
+                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
                 padding: '0 0 0 4px', fontSize: 12, lineHeight: 1,
               }}>×</button>
             </span>
           ))}
           <button onClick={() => { setAppliedFilters([]); resetPage(); }} style={{
             padding: '2px 8px', fontSize: 11, background: 'none',
-            color: '#475569', border: '1px solid #334155', borderRadius: 20, cursor: 'pointer',
+            color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 20, cursor: 'pointer',
           }}>Clear all</button>
         </div>
       )}
@@ -430,11 +430,11 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', minHeight: 0 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
-                <tr style={{ background: '#0f172a', borderBottom: '2px solid #1e293b' }}>
+                <tr style={{ background: 'var(--bg-card)', borderBottom: '2px solid var(--border)' }}>
                   {HC_COLUMNS.map(col => (
                     <th key={col.key} onClick={() => handleSort(col.key)} style={{
-                      padding: '9px 11px', textAlign: col.align || 'left', background: '#0f172a',
-                      color: sortKey === col.key ? '#60a5fa' : '#64748b', fontWeight: 600,
+                      padding: '9px 11px', textAlign: col.align || 'left', background: 'var(--bg-card)',
+                      color: sortKey === col.key ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: 600,
                       cursor: col.key === 'rank' ? 'default' : 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
                     }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -443,16 +443,16 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
                       </span>
                     </th>
                   ))}
-                  <th style={{ padding: '9px 11px', textAlign: 'center', color: '#64748b', fontWeight: 600, background: '#0f172a' }}>Action</th>
+                  <th style={{ padding: '9px 11px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 600, background: 'var(--bg-card)' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map((r, i) => {
                   const rank = rankOffset + i + 1;
-                  const bg   = i % 2 === 0 ? '#111827' : '#0f172a';
+                  const bg   = i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-dark)';
                   return (
-                    <tr key={r.mobile} style={{ background: bg, borderBottom: '1px solid #1e293b', transition: 'background 0.1s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#1e293b'}
+                    <tr key={r.mobile} style={{ background: bg, borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = bg}>
                       <td style={{ padding: '8px 11px', textAlign: 'center' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -490,7 +490,7 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
                             color: r.complaintCount >= 10 ? '#ef4444' : r.complaintCount >= 5 ? '#f97316' : '#fbbf24' }}>
                             {r.complaintCount}
                           </span>
-                          <div style={{ flex: 1, background: '#1e293b', borderRadius: 3, height: 5, minWidth: 40 }}>
+                          <div style={{ flex: 1, background: 'var(--border)', borderRadius: 3, height: 5, minWidth: 40 }}>
                             <div style={{ height: '100%', borderRadius: 3,
                               width: `${Math.round((r.complaintCount / maxCount) * 100)}%`,
                               background: r.complaintCount >= 10 ? 'linear-gradient(90deg,#ef4444,#fca5a5)'
@@ -503,8 +503,8 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
                       <td style={{ padding: '8px 11px', color: '#64748b', whiteSpace: 'nowrap' }}>{r.lastComplaintDt || '—'}</td>
                       <td style={{ padding: '8px 11px', textAlign: 'center' }}>
                         <button onClick={() => openDrawer(`${r.fullName} (${r.mobile})`, { search: r.mobile } as DrawerFilters)}
-                          style={{ background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.3)',
-                            borderRadius: 5, color: '#60a5fa', padding: '3px 9px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
+                          style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+                            borderRadius: 5, color: 'var(--primary)', padding: '3px 9px', fontSize: 11, cursor: 'pointer', fontWeight: 500 }}>
                           View All
                         </button>
                       </td>
@@ -519,9 +519,9 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
           <div style={{
             flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexWrap: 'wrap', gap: 8, padding: '9px 8px', marginTop: 6,
-            borderTop: '1px solid #1e293b',
-            background: '#0d1424',   /* solid — no transparency */
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.6)',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-card)',   /* solid — no transparency */
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
             position: 'sticky', bottom: 0, zIndex: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

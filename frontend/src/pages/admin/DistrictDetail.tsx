@@ -325,25 +325,23 @@ export const DistrictDetail = () => {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 18px',
-                background: 'linear-gradient(135deg, #334155 0%, #1e293b 100%)',
-                border: '1px solid #475569',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
                 borderRadius: '999px',
-                color: '#cbd5e1',
+                color: 'var(--text-primary)',
                 fontSize: '14px',
                 fontWeight: 500,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                boxShadow: 'var(--shadow-sm)',
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #475569 0%, #334155 100%)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#f1f5f9';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = '#94a3b8';
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-hover)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)';
               }}
               onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #334155 0%, #1e293b 100%)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#cbd5e1';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = '#475569';
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-card)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
               }}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
