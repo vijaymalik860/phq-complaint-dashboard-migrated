@@ -1005,11 +1005,19 @@ body {
 
 .stat-card.pink {
   background: linear-gradient(135deg, #ec4899, #d946ef);
-  color: #ffffff;
+  color: #000000 !important;
 }
 
-.stat-card.pink .stat-card-value {
-  color: #ffffff;
+.stat-card.pink .stat-card-value,
+.stat-card.pink .stat-card-label,
+.stat-card.pink .stat-card-sub,
+.stat-card.pink .stat-card-click,
+.stat-card.pink .stat-card-detail,
+.stat-card.pink .stat-card-detail span,
+.stat-card.pink div,
+.stat-card.pink svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
 }
 
 
