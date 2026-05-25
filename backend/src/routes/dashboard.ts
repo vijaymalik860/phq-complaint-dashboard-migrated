@@ -426,7 +426,14 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
         let districtFilter: any;
         let resolvedDistrictId: bigint | null = null;
         if (!districtParam || districtParam.toLowerCase() === UNMAPPED.toLowerCase()) {
-          districtFilter = { districtMasterId: null };
+          const allDistricts = await prisma.district.findMany({ select: { id: true } });
+          const districtIdsList = allDistricts.map(d => d.id);
+          districtFilter = {
+            OR: [
+              { districtMasterId: null },
+              { districtMasterId: { notIn: districtIdsList } },
+            ],
+          };
         } else {
           const district = await prisma.district.findFirst({ where: { name: { equals: districtParam, mode: 'insensitive' } } });
           if (!district) {

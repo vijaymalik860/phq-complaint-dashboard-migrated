@@ -180,11 +180,11 @@ export const DistrictDetail = () => {
     if (filters.fromDate) f.fromDate = filters.fromDate;
     if (filters.toDate) f.toDate = filters.toDate;
     if (district) f.district = district;
-    if (psId) {
-      f.policeStationIds = psId;
-      if (psName && psName !== 'Unmapped') f.psName = psName;
-    } else if (psName === 'Unmapped') {
+    if (psName === 'Unmapped') {
       f.unmappedPs = 'true';
+    } else if (psId) {
+      f.policeStationIds = psId;
+      if (psName) f.psName = psName;
     } else if (psName) {
       f.psName = psName;
     }

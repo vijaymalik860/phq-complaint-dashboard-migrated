@@ -431,20 +431,31 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     // DistrictDetail counts records for a specific PS by querying with the district filter FIRST, 
     // then grouping by PS. To match those exact counts in the drawer, we must filter by BOTH district and PS.
     if (district && !districtIds) {
-      const districtRecord = await prisma.district.findFirst({
-        where: { name: { equals: district, mode: 'insensitive' } },
-        select: { id: true },
-      });
-      if (districtRecord) {
-        andConditions.push({ districtMasterId: districtRecord.id });
-      } else {
-        // Fallback: text search on districtName field
+      if (district.toLowerCase() === 'unmapped') {
+        const allDistricts = await prisma.district.findMany({ select: { id: true } });
+        const districtIdsList = allDistricts.map(d => d.id);
         andConditions.push({
           OR: [
-            { districtName:    { contains: district, mode: 'insensitive' } },
-            { addressDistrict: { contains: district, mode: 'insensitive' } },
+            { districtMasterId: null },
+            { districtMasterId: { notIn: districtIdsList } },
           ],
         });
+      } else {
+        const districtRecord = await prisma.district.findFirst({
+          where: { name: { equals: district, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (districtRecord) {
+          andConditions.push({ districtMasterId: districtRecord.id });
+        } else {
+          // Fallback: text search on districtName field
+          andConditions.push({
+            OR: [
+              { districtName:    { contains: district, mode: 'insensitive' } },
+              { addressDistrict: { contains: district, mode: 'insensitive' } },
+            ],
+          });
+        }
       }
     }
 
@@ -531,7 +542,34 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     }
 
     if (unmappedPs === 'true') {
-      andConditions.push({ policeStationMasterId: null });
+      let targetDistrictIds: bigint[] = [];
+      if (district) {
+        const districtRecord = await prisma.district.findFirst({
+          where: { name: { equals: district, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (districtRecord) targetDistrictIds.push(districtRecord.id);
+      } else if (districtIds) {
+        targetDistrictIds = parseBigIntCsv(districtIds);
+      }
+
+      if (targetDistrictIds.length > 0) {
+        const psRecords = await prisma.policeStation.findMany({
+          where: { districtId: { in: targetDistrictIds } },
+          select: { id: true },
+        });
+        const psIds = psRecords.map(p => p.id);
+        if (psIds.length > 0) {
+          andConditions.push({
+            OR: [
+              { policeStationMasterId: null },
+              { policeStationMasterId: { notIn: psIds } },
+            ],
+          });
+        }
+      } else {
+        andConditions.push({ policeStationMasterId: null });
+      }
     }
 
     if (pendencyAge) {
