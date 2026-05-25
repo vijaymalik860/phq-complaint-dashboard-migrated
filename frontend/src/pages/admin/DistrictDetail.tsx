@@ -492,6 +492,18 @@ export const DistrictDetail = () => {
                 subValue="Only for records where date was found"
                 colorClass="teal"
               />
+              <StatCard
+                label="Complaints with enquiry officer not assigned"
+                value={(data?.data?.totalPendingEoNotAssigned || 0).toLocaleString()}
+                subValue={`${totalPending ? Math.round(((data?.data?.totalPendingEoNotAssigned || 0) / totalPending) * 100) : 0}% of Pending Complaints`}
+                colorClass="indigo"
+                onClick={() => openDrawer('Complaints with Enquiry Officer Not Assigned', {
+                  district: district!,
+                  statusGroup: 'pending',
+                  statusRaw: 'Pending-EO Not Assigned',
+                  ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
+                })}
+              />
             </div>
 
             {/* PS Summary + Category Chart */}

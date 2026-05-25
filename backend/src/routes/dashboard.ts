@@ -29,6 +29,9 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     const totalReceived = await prisma.complaint.count({ where: baseWhere });
     const totalDisposed = await prisma.complaint.count({ where: withAnd(baseWhere, { statusGroup: 'disposed' }) });
     const totalPending = await prisma.complaint.count({ where: withAnd(baseWhere, { statusGroup: 'pending' }) });
+    const totalPendingEoNotAssigned = await prisma.complaint.count({
+      where: withAnd(baseWhere, { statusRaw: 'Pending-EO Not Assigned' }),
+    });
     // Complaints where CCTNS API provided no recognizable status value
     const totalUnknown = await prisma.complaint.count({ where: withAnd(baseWhere, { statusGroup: 'unknown' }) });
     const disposedMissingDateCount = await prisma.complaint.count({
@@ -129,6 +132,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       totalReceived,
       totalDisposed,
       totalPending,
+      totalPendingEoNotAssigned,
       totalUnknown,
       disposedMissingDateCount,
       pendingOverFifteenDays: pending15,
@@ -465,6 +469,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
             policeStationMasterId: true,
             submitPsCd: true,         // submitting PS code (primary operational field)
             statusGroup: true,
+            statusRaw: true,
             complRegDt: true,
             disposalDate: true,
             isDisposedMissingDate: true,
@@ -593,6 +598,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
 
     const avgPendingTime = pendingCountWithDate > 0 ? Math.round(totalPendingDays / pendingCountWithDate) : 0;
     const oldestPendingDate = oldestPendingTime !== null ? new Date(oldestPendingTime) : null;
+    const totalPendingEoNotAssigned = complaints.filter(comp => comp.statusRaw?.toLowerCase() === 'pending-eo not assigned').length;
 
     return {
       district: districtParam || UNMAPPED,
@@ -600,6 +606,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       categories,
       avgPendingTime,
       oldestPendingDate: oldestPendingDate ? oldestPendingDate.toISOString() : null,
+      totalPendingEoNotAssigned,
     };
     });
 

@@ -20,6 +20,7 @@ export interface DrawerFilters {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  statusRaw?: string;
 }
 
 interface Props {
@@ -171,12 +172,14 @@ export const ComplaintsDrawer = ({ open, title, filters, onClose }: Props) => {
       filters.policeStationIds, filters.officeIds, filters.classOfIncident,
       filters.fromDate, filters.toDate, filters.pendencyAge, filters.disposalAge,
       filters.unmappedPs, filters.psName, filters.sortBy, filters.sortOrder,
+      filters.statusRaw,
     ],
     queryFn: () => cctnsApi.listPaginated({
-      page, limit,
-      // search goes to backend — searches ALL records, not just current page
+      page,
+      limit,
       search: debouncedSearch || undefined,
       statusGroup: resolvedStatus,
+      statusRaw: filters.statusRaw || undefined,
       isDisposedMissingDate: isMissingDate ? 'true' : undefined,
       districtIds:      filters.districtIds      || undefined,
       district:         filters.district         || undefined,

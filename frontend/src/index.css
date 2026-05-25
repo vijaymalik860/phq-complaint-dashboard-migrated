@@ -787,6 +787,8 @@ body {
 .stat-card.yellow .stat-card-value { color: #1a1a1a; }
 .stat-card.purple { background: linear-gradient(135deg, #ee0979, #ff6a00); }
 .stat-card.teal { background: linear-gradient(135deg, #0d9488, #14b8a6); }
+.stat-card.indigo { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+
 
 /* Charts Grid */
 .charts-grid {

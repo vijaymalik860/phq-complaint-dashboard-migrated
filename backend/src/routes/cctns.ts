@@ -399,6 +399,7 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
       search = '',
       district = '',
       statusGroup = '',
+      statusRaw = '',
       dateFrom = '',
       dateTo = '',
       sortBy = 'id',
@@ -530,6 +531,10 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
 
     if (statusGroup) {
       andConditions.push({ statusGroup: statusGroup.toLowerCase() });
+    }
+
+    if (statusRaw) {
+      andConditions.push({ statusRaw });
     }
 
     if (isDisposedMissingDate === 'true') {

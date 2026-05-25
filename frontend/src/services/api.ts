@@ -319,6 +319,7 @@ export const cctnsApi = {
     search?: string;
     district?: string;
     statusGroup?: string;
+    statusRaw?: string;
     isDisposedMissingDate?: string;
     dateFrom?: string;
     dateTo?: string;

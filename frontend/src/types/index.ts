@@ -24,6 +24,7 @@ export interface DashboardSummary {
   pendingOverFifteenDays: number;
   pendingOverOneMonth: number;
   pendingOverTwoMonths: number;
+  totalPendingEoNotAssigned?: number;
 }
 
 export interface DistrictChartData {
