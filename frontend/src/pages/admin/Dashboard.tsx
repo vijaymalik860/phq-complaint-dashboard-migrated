@@ -316,8 +316,6 @@ export const DashboardPage = () => {
     { key: 'pending_pct', label: 'Pending %' },
     { key: 'disposed', label: 'Disposed' },
     { key: 'disposed_pct', label: 'Disposed %' },
-    { key: 'unknown', label: 'Status NF' },
-    { key: 'unknown_pct', label: 'Status NF %' },
   ];
 
   const categoryColumns = [
@@ -388,7 +386,6 @@ export const DashboardPage = () => {
   const matrixCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'missingDates', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'u7', label: '<7 Days', sortable: true, align: 'center' },
     { key: 'u15', label: '7-15 Days', sortable: true, align: 'center' },
     { key: 'u30', label: '15-30 Days', sortable: true, align: 'center' },
@@ -408,7 +405,6 @@ export const DashboardPage = () => {
   const renderMatrixDays = (col: any, row: any) => {
     if (col.key === 'district') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total') return mkCell(row.total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'missingDates') return mkCell(row.missingDates || 0, '#94a3b8', undefined, row.district ? () => openDrawer(`${row.district} — Pending (Date Not Found)`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'missing' })) : undefined);
     if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
@@ -420,7 +416,6 @@ export const DashboardPage = () => {
   const matrixPctCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'Total', sortable: true, align: 'center' },
-    { key: 'pct_missing', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'pct_u7', label: '<7 Days', sortable: true, align: 'center' },
     { key: 'pct_u15', label: '7-15 Days', sortable: true, align: 'center' },
     { key: 'pct_u30', label: '15-30 Days', sortable: true, align: 'center' },
@@ -439,7 +434,6 @@ export const DashboardPage = () => {
     );
     if (col.key === 'district')  return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total') return mkPct(row.pct_total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
-    if (col.key === 'pct_missing') return mkPct(row.pct_missing || 0, 'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending (Date Not Found)`, drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'missing' })) : undefined);
     if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
@@ -467,7 +461,6 @@ export const DashboardPage = () => {
   const disposalCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'total', label: 'With Date', sortable: true, align: 'center' },
-    { key: 'missingDates', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'u7', label: 'Within 7 Days', sortable: true, align: 'center' },
     { key: 'u15', label: 'Within 15 Days', sortable: true, align: 'center' },
     { key: 'u30', label: 'Within 30 Days', sortable: true, align: 'center' },
@@ -478,7 +471,6 @@ export const DashboardPage = () => {
   const renderDisposalDays = (col: any, row: any) => {
     if (col.key === 'district')     return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'total')        return mkCell(row.total,           '#4ade80', 600,    row.district ? () => openDrawer(`${row.district} — Disposed`,               drawerFiltersForDistrict(row.district, 'disposed')) : undefined);
-    if (col.key === 'missingDates') return mkCell(row.missingDates || 0, '#fbbf24', 600,  row.district ? () => openDrawer(`${row.district} — Disposed (Date Not Found)`, drawerFiltersForDistrict(row.district, 'disposed_missing_date')) : undefined);
     if (col.key === 'u7')           return mkCell(row.u7,             '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 7 Days`,      drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
     if (col.key === 'u15')          return mkCell(row.u15,            '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 15 Days`,    drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
     if (col.key === 'u30')          return mkCell(row.u30,            '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 30 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
@@ -490,7 +482,6 @@ export const DashboardPage = () => {
   const disposalPctCols: Column<any>[] = [
     { key: 'district', label: 'District', sortable: true },
     { key: 'pct_total', label: 'With Date', sortable: true, align: 'center' },
-    { key: 'pct_missing', label: 'Date Not Found', sortable: true, align: 'center' },
     { key: 'pct_u7', label: 'Within 7 Days', sortable: true, align: 'center' },
     { key: 'pct_u15', label: 'Within 15 Days', sortable: true, align: 'center' },
     { key: 'pct_u30', label: 'Within 30 Days', sortable: true, align: 'center' },
@@ -509,7 +500,6 @@ export const DashboardPage = () => {
     );
     if (col.key === 'district')    return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
     if (col.key === 'pct_total')   return mkDPct(row.pct_total,       '#4ade80', 600,    row.district ? () => openDrawer(`${row.district} — Disposed`,               drawerFiltersForDistrict(row.district, 'disposed')) : undefined);
-    if (col.key === 'pct_missing') return mkDPct(row.pct_missing || 0,'#fbbf24', 600,    row.district ? () => openDrawer(`${row.district} — Disposed (Date Not Found)`, drawerFiltersForDistrict(row.district, 'disposed_missing_date')) : undefined);
     if (col.key === 'pct_u7')      return mkDPct(row.pct_u7,          '#4ade80', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 7 Days`,     drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u7'  })) : undefined);
     if (col.key === 'pct_u15')     return mkDPct(row.pct_u15,         '#a3e635', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 15 Days`,   drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u15' })) : undefined);
     if (col.key === 'pct_u30')     return mkDPct(row.pct_u30,         '#eab308', undefined, row.district ? () => openDrawer(`${row.district} — Disposed Within 30 Days`,  drawerFiltersForDistrict(row.district, 'disposed', { disposalAge: 'u30' })) : undefined);
@@ -801,13 +791,11 @@ export const DashboardPage = () => {
                 data={sortedDistricts}
                 columns={[
                   { key: 'district', label: 'District', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
-                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#ef4444', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Pending`, drawerFiltersForDistrict(row.district, 'pending')); }}>{row.pending}</span> : <span style={{ color: '#ef4444' }}>{row.pending}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
+                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#ef4444', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')); }}>{row.pending}</span> : <span style={{ color: '#ef4444' }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed ? row.pending_pct.toFixed(1) : row.pending_pct}%</span> },
-                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#16a34a', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Disposed`, drawerFiltersForDistrict(row.district, 'disposed')); }}>{row.disposed}</span> : <span style={{ color: '#16a34a' }}>{row.disposed}</span> },
+                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#16a34a', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — Disposed`, drawerFiltersForDistrict(row.district, 'disposed')); }}>{row.disposed}</span> : <span style={{ color: '#16a34a' }}>{row.disposed}</span> },
                   { key: 'disposed_pct', label: 'Disposed %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.disposed_pct?.toFixed ? row.disposed_pct.toFixed(1) : row.disposed_pct}%</span> },
-                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#64748b', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} � Status NF`, drawerFiltersForDistrict(row.district, 'unknown')); }}>{row.unknown || 0}</span> : <span style={{ color: '#64748b' }}>{row.unknown || 0}</span> },
-                  { key: 'unknown_pct', label: 'Status NF %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#64748b', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.unknown_pct?.toFixed ? row.unknown_pct.toFixed(1) : row.unknown_pct}%</span> },
                 ]}
                 maxHeight="300px"
                 onRowClick={(row) => { if (row.district) navigate(`/admin/district/${encodeURIComponent(String(row.district))}`); }}
@@ -816,9 +804,9 @@ export const DashboardPage = () => {
                 onSort={(key, dir) => key ? setDistrictTableSort({ key, dir }) : setDistrictTableSort(null)}
                 showTotalRow={true}
                 getTotalRow={(data) => {
-                  const totals = data.reduce((acc, r) => ({ total: acc.total + Number(r.total || 0), pending: acc.pending + Number(r.pending || 0), disposed: acc.disposed + Number(r.disposed || 0), unknown: acc.unknown + Number(r.unknown || 0) }), { total: 0, pending: 0, disposed: 0, unknown: 0 });
+                  const totals = data.reduce((acc, r) => ({ total: acc.total + Number(r.total || 0), pending: acc.pending + Number(r.pending || 0), disposed: acc.disposed + Number(r.disposed || 0) }), { total: 0, pending: 0, disposed: 0 });
                   const grandTotal = totals.total || 1;
-                  return { district: '', total: totals.total.toLocaleString(), pending: totals.pending.toLocaleString(), pending_pct: ((totals.pending / grandTotal) * 100).toFixed(1) + '%', disposed: totals.disposed.toLocaleString(), disposed_pct: ((totals.disposed / grandTotal) * 100).toFixed(1) + '%', unknown: totals.unknown.toLocaleString(), unknown_pct: ((totals.unknown / grandTotal) * 100).toFixed(1) + '%' };
+                  return { district: '', total: totals.total.toLocaleString(), pending: totals.pending.toLocaleString(), pending_pct: ((totals.pending / grandTotal) * 100).toFixed(1) + '%', disposed: totals.disposed.toLocaleString(), disposed_pct: ((totals.disposed / grandTotal) * 100).toFixed(1) + '%' };
                 }}
               />
             )}
@@ -853,24 +841,22 @@ export const DashboardPage = () => {
                 data={sortedCategories}
                 columns={[
                   { key: 'category', label: 'Class of Incident', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: '#60a5fa' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
-                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Pending`, drawerFiltersForCategory(row.category, 'pending')); }}>{row.pending}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: '#60a5fa' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
+                  { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  Pending`, drawerFiltersForCategory(row.category, 'pending')); }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed(1)}%</span> },
-                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#16a34a' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Disposed`, drawerFiltersForCategory(row.category, 'disposed')); }}>{row.disposed}</span> },
+                  { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#16a34a' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  Disposed`, drawerFiltersForCategory(row.category, 'disposed')); }}>{row.disposed}</span> },
                   { key: 'disposed_pct', label: 'Disposed %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.disposed_pct?.toFixed(1)}%</span> },
-                  { key: 'unknown', label: 'Status NF', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#64748b' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category} � Status NF`, drawerFiltersForCategory(row.category, 'unknown')); }}>{row.unknown || 0}</span> },
-                  { key: 'unknown_pct', label: 'Status NF %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#64748b', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.unknown_pct?.toFixed(1)}%</span> },
                 ]}
                 maxHeight="300px"
-                onRowClick={(row) => openDrawer(`${row.category} � All Complaints`, drawerFiltersForCategory(row.category))}
+                onRowClick={(row) => openDrawer(`${row.category}  All Complaints`, drawerFiltersForCategory(row.category))}
                 noExpand={true}
                 hideTitleBar={true}
                 onSort={(key, dir) => key ? setCategoryTableSort({ key, dir }) : setCategoryTableSort(null)}
                 showTotalRow={true}
                 getTotalRow={(data) => {
-                  const totals = data.reduce((acc, r) => ({ total: acc.total + Number(r.total || 0), pending: acc.pending + Number(r.pending || 0), disposed: acc.disposed + Number(r.disposed || 0), unknown: acc.unknown + Number(r.unknown || 0) }), { total: 0, pending: 0, disposed: 0, unknown: 0 });
+                  const totals = data.reduce((acc, r) => ({ total: acc.total + Number(r.total || 0), pending: acc.pending + Number(r.pending || 0), disposed: acc.disposed + Number(r.disposed || 0) }), { total: 0, pending: 0, disposed: 0 });
                   const grandTotal = totals.total || 1;
-                  return { category: '', total: totals.total.toLocaleString(), pending: totals.pending.toLocaleString(), pending_pct: ((totals.pending / grandTotal) * 100).toFixed(1) + '%', disposed: totals.disposed.toLocaleString(), disposed_pct: ((totals.disposed / grandTotal) * 100).toFixed(1) + '%', unknown: totals.unknown.toLocaleString(), unknown_pct: ((totals.unknown / grandTotal) * 100).toFixed(1) + '%' };
+                  return { category: '', total: totals.total.toLocaleString(), pending: totals.pending.toLocaleString(), pending_pct: ((totals.pending / grandTotal) * 100).toFixed(1) + '%', disposed: totals.disposed.toLocaleString(), disposed_pct: ((totals.disposed / grandTotal) * 100).toFixed(1) + '%' };
                 }}
               />
             )}
@@ -924,17 +910,15 @@ export const DashboardPage = () => {
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
                     total: acc.total + Number(r.total || 0),
-                    missingDates: acc.missingDates + Number(r.missingDates || 0),
                     u7: acc.u7 + Number(r.u7 || 0),
                     u15: acc.u15 + Number(r.u15 || 0),
                     u30: acc.u30 + Number(r.u30 || 0),
                     o30: acc.o30 + Number(r.o30 || 0),
                     o60: acc.o60 + Number(r.o60 || 0),
-                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  }), { total: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
                   return {
                     district: '',
                     total: totals.total.toLocaleString(),
-                    missingDates: totals.missingDates.toLocaleString(),
                     u7: totals.u7.toLocaleString(),
                     u15: totals.u15.toLocaleString(),
                     u30: totals.u30.toLocaleString(),
@@ -955,18 +939,16 @@ export const DashboardPage = () => {
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
                     total: acc.total + Number(r.total || 0),
-                    missingDates: acc.missingDates + Number(r.missingDates || 0),
                     u7: acc.u7 + Number(r.u7 || 0),
                     u15: acc.u15 + Number(r.u15 || 0),
                     u30: acc.u30 + Number(r.u30 || 0),
                     o30: acc.o30 + Number(r.o30 || 0),
                     o60: acc.o60 + Number(r.o60 || 0),
-                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  }), { total: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
                   const grandTotal = totals.total || 1;
                   return {
                     district: '',
                     pct_total: '100%',
-                    pct_missing: Math.round(totals.missingDates * 100 / grandTotal) + '%',
                     pct_u7: Math.round(totals.u7 * 100 / grandTotal) + '%',
                     pct_u15: Math.round(totals.u15 * 100 / grandTotal) + '%',
                     pct_u30: Math.round(totals.u30 * 100 / grandTotal) + '%',
@@ -1022,17 +1004,15 @@ export const DashboardPage = () => {
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
                     total: acc.total + Number(r.total || 0),
-                    missingDates: acc.missingDates + Number(r.missingDates || 0),
                     u7: acc.u7 + Number(r.u7 || 0),
                     u15: acc.u15 + Number(r.u15 || 0),
                     u30: acc.u30 + Number(r.u30 || 0),
                     o30: acc.o30 + Number(r.o30 || 0),
                     o60: acc.o60 + Number(r.o60 || 0),
-                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
+                  }), { total: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
                   return {
                     district: '',
                     total: totals.total.toLocaleString(),
-                    missingDates: totals.missingDates.toLocaleString(),
                     u7: totals.u7.toLocaleString(),
                     u15: totals.u15.toLocaleString(),
                     u30: totals.u30.toLocaleString(),
@@ -1052,19 +1032,16 @@ export const DashboardPage = () => {
                 getTotalRow={(data) => {
                   const totals = data.reduce<Record<string, number>>((acc, r) => ({
                     total: acc.total + Number(r.total || 0),
-                    missingDates: acc.missingDates + Number(r.missingDates || 0),
                     u7: acc.u7 + Number(r.u7 || 0),
                     u15: acc.u15 + Number(r.u15 || 0),
                     u30: acc.u30 + Number(r.u30 || 0),
                     o30: acc.o30 + Number(r.o30 || 0),
                     o60: acc.o60 + Number(r.o60 || 0),
-                  }), { total: 0, missingDates: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
-                  const grandTotalDisposed = totals.total + totals.missingDates || 1;
+                  }), { total: 0, u7: 0, u15: 0, u30: 0, o30: 0, o60: 0 });
                   const totalWithDate = totals.total || 1;
                   return {
                     district: '',
-                    pct_total: Math.round(totals.total * 100 / grandTotalDisposed) + '%',
-                    pct_missing: Math.round(totals.missingDates * 100 / grandTotalDisposed) + '%',
+                    pct_total: '100%',
                     pct_u7: Math.round(totals.u7 * 100 / totalWithDate) + '%',
                     pct_u15: Math.round(totals.u15 * 100 / totalWithDate) + '%',
                     pct_u30: Math.round(totals.u30 * 100 / totalWithDate) + '%',

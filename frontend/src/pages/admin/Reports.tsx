@@ -579,10 +579,8 @@ export const ReportsPage = () => {
     { key: 'total', label: 'Total' },
     { key: 'pending', label: 'Pending' },
     { key: 'disposed', label: 'Disposed' },
-    { key: 'unknown', label: 'Status NF' },
     { key: 'pendPct', label: 'Pending %' },
     { key: 'dispPct', label: 'Disposed %' },
-    { key: 'unknPct', label: 'Status NF %' },
   ];
 
   const getReportSubtitle = () => {
@@ -628,15 +626,12 @@ export const ReportsPage = () => {
   const total = rows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.total || r.count || 0), 0);
   const pend = rows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.pending || 0), 0);
   const disp = rows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.disposed || 0), 0);
-  const unk = rows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.unknown || 0), 0);
-  const missing = rows.reduce((s: number, r: Record<string, unknown>) => s + Number(r.missingDates || 0), 0);
 
   const tableData = useMemo(() => {
     const mapped = rows.map((r: Record<string, unknown>, i: number) => {
       const tot = Number(r.total || r.count || 0);
       const p = Number(r.pending || 0);
       const d = Number(r.disposed || 0);
-      const u = Number(r.unknown || 0);
       const rawName = String(
         r.district || r.branch || r.mode || r.status ||
         r.natureOfIncident || r.typeAgainst || r.actionTaken ||
@@ -651,10 +646,8 @@ export const ReportsPage = () => {
         total: tot,
         pending: p,
         disposed: d,
-        unknown: u,
         pendPct: tot > 0 ? Math.round((p / tot) * 100) + '%' : '0%',
         dispPct: tot > 0 ? Math.round((d / tot) * 100) + '%' : '0%',
-        unknPct: tot > 0 ? Math.round((u / tot) * 100) + '%' : '0%',
       };
     });
     return [...mapped].sort((a, b) => {
@@ -671,10 +664,8 @@ export const ReportsPage = () => {
     { key: 'total', label: 'Total', sortable: true, align: 'right' },
     { key: 'pending', label: 'Pending', sortable: true, align: 'right' },
     { key: 'disposed', label: 'Disposed', sortable: true, align: 'right' },
-    { key: 'unknown', label: 'Status Not Found', sortable: true, align: 'right' },
     { key: 'pendPct', label: 'Pending %', sortable: true, align: 'center' },
     { key: 'dispPct', label: 'Disposed %', sortable: true, align: 'center' },
-    { key: 'unknPct', label: 'Status Not Found %', sortable: true, align: 'center' },
   ];
 
   // Chart preview: top 25 sorted rows reversed so highest appears at the top of horizontal bar
@@ -688,7 +679,6 @@ export const ReportsPage = () => {
       total: d.total,
       pending: d.pending,
       disposed: d.disposed,
-      unknown: d.unknown,
     })));
   }, [chartRows, type]);
 
@@ -701,7 +691,6 @@ export const ReportsPage = () => {
       total: d.total,
       pending: d.pending,
       disposed: d.disposed,
-      unknown: d.unknown,
     })));
   }, [tableData, type]);
 
@@ -797,14 +786,6 @@ export const ReportsPage = () => {
                 <span className="summary-value">{disp.toLocaleString()}</span>
                 <span className="summary-label">Disposed {total > 0 ? `(${(disp / total * 100).toFixed(1)}%)` : ''}</span>
               </div>
-              <div className="summary-item" style={{ borderLeft: '3px solid #64748b' }}>
-                <span className="summary-value">{unk.toLocaleString()}</span>
-                <span className="summary-label">Status Not Found {total > 0 ? `(${(unk / total * 100).toFixed(1)}%)` : ''}</span>
-              </div>
-              <div className="summary-item" style={{ borderLeft: '3px solid #a855f7' }}>
-                <span className="summary-value">{missing.toLocaleString()}</span>
-                <span className="summary-label">Disposal Date Not Found</span>
-              </div>
             </div>
 
             <ChartCard
@@ -832,10 +813,8 @@ export const ReportsPage = () => {
                       if (c.key === 'total') return <span style={{ fontWeight: 600 }}>{String(row.total)}</span>;
                       if (c.key === 'pending') return <span style={{ color: '#fbbf24' }}>{String(row.pending)}</span>;
                       if (c.key === 'disposed') return <span style={{ color: '#34d399' }}>{String(row.disposed)}</span>;
-                      if (c.key === 'unknown') return <span style={{ color: '#94a3b8' }}>{String(row.unknown)}</span>;
                       if (c.key === 'pendPct') return <span style={{ color: '#fbbf24' }}>{String(row.pendPct)}</span>;
                       if (c.key === 'dispPct') return <span style={{ color: '#34d399' }}>{String(row.dispPct)}</span>;
-                      if (c.key === 'unknPct') return <span style={{ color: '#94a3b8' }}>{String(row.unknPct)}</span>;
                       return String(row[c.key as keyof typeof row] ?? '-');
                     },
                   }))}
@@ -848,18 +827,15 @@ export const ReportsPage = () => {
                       total: acc.total + Number(r.total || 0),
                       pending: acc.pending + Number(r.pending || 0),
                       disposed: acc.disposed + Number(r.disposed || 0),
-                      unknown: acc.unknown + Number(r.unknown || 0),
-                    }), { total: 0, pending: 0, disposed: 0, unknown: 0 });
+                    }), { total: 0, pending: 0, disposed: 0 });
                     const grandTotal = totals.total || 1;
                     return {
                       name: '',
                       total: totals.total.toLocaleString(),
                       pending: totals.pending.toLocaleString(),
                       disposed: totals.disposed.toLocaleString(),
-                      unknown: totals.unknown.toLocaleString(),
                       pendPct: ((totals.pending / grandTotal) * 100).toFixed(1) + '%',
                       dispPct: ((totals.disposed / grandTotal) * 100).toFixed(1) + '%',
-                      unknPct: ((totals.unknown / grandTotal) * 100).toFixed(1) + '%',
                     };
                   }}
                 />
