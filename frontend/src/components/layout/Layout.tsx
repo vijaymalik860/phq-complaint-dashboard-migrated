@@ -5,6 +5,16 @@ import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../contexts/ThemeContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faTachometerAlt,
+  faFire,
+  faFileAlt,
+  faClock,
+  faInbox,
+  faDatabase,
+  faSignOutAlt,
+} from '@fortawesome/free-solid-svg-icons';
 export { useChartExpand } from '../../contexts/ChartContext';
 
 interface LayoutProps {
@@ -12,13 +22,14 @@ interface LayoutProps {
 }
 
 const menuItems = [
-  { path: '/admin/dashboard', label: 'Dashboard' },
-  { path: '/admin/highlights', label: 'Hotspots' },
-  { path: '/admin/reports', label: 'Reports' },
-  { path: '/admin/pending', label: 'Pending' },
-  { path: '/admin/complaints', label: 'Complaints' },
-  { path: '/admin/cctns', label: 'CCTNS' },
+  { path: '/admin/dashboard', label: 'Dashboard', icon: faTachometerAlt },
+  { path: '/admin/highlights', label: 'Hotspots', icon: faFire },
+  { path: '/admin/reports', label: 'Reports', icon: faFileAlt },
+  { path: '/admin/pending', label: 'Pending', icon: faClock },
+  { path: '/admin/complaints', label: 'Complaints', icon: faInbox },
+  { path: '/admin/cctns', label: 'CCTNS', icon: faDatabase },
 ];
+
 
 export const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -327,38 +338,15 @@ export const Layout = ({ children }: LayoutProps) => {
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >
-              {item.label}
+              <FontAwesomeIcon icon={item.icon} className="nav-icon" />
+              <span className="nav-label">{item.label}</span>
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid var(--border)' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '10px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid #ef4444',
-              borderRadius: '6px',
-              color: '#ef4444',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Logout
+        <div className="sidebar-footer">
+          <button onClick={handleLogout} className="logout-btn">
+            <FontAwesomeIcon icon={faSignOutAlt} className="nav-icon" />
+            <span className="nav-label">Logout</span>
           </button>
         </div>
       </aside>
