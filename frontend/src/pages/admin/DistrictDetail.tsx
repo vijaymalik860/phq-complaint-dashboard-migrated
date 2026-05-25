@@ -60,14 +60,14 @@ const CatSortDropdown = ({ value, onChange }: { value: string; onChange: (v: str
         <span>Sort</span>
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 9999, minWidth: 180, padding: '4px 0' }}
+        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 6, boxShadow: 'var(--shadow-md)', zIndex: 9999, minWidth: 180, padding: '4px 0' }}
           onMouseEnter={() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }}
           onMouseLeave={() => { }}
         >
           {CAT_SORTS.map(opt => (
             <div key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
-              style={{ padding: '7px 14px', fontSize: 12, cursor: 'pointer', color: value === opt.value ? '#60a5fa' : '#cbd5e1', fontWeight: value === opt.value ? 600 : 400, backgroundColor: value === opt.value ? 'rgba(51,65,85,0.6)' : 'transparent' }}
-              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = '#334155'; }}
+              style={{ padding: '7px 14px', fontSize: 12, cursor: 'pointer', color: value === opt.value ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: value === opt.value ? 600 : 400, backgroundColor: value === opt.value ? 'var(--bg-hover)' : 'transparent' }}
+              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-hover)'; }}
               onMouseLeave={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
             >{opt.label}</div>
           ))}
@@ -270,7 +270,7 @@ export const DistrictDetail = () => {
     return row[col.key];
   };
 
-  const matrixCardStyle = { backgroundColor: '#1e293b', borderRadius: '8px', padding: '20px', border: '1px solid #334155', display: 'flex', flexDirection: 'column' as const };
+  const matrixCardStyle = { backgroundColor: 'var(--bg-card)', borderRadius: '8px', padding: '20px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' as const };
 
   const getCategorySubtitle = () => {
     return `sorted ${CAT_SORTS.find(o => o.value === catSort)?.label || 'By Pending ↓'}`;

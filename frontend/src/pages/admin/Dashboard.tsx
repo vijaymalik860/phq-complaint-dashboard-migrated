@@ -94,10 +94,10 @@ const SortDropdown = ({ value, onChange, options }: { value: string, onChange: (
             right: 0,
             marginTop: '4px',
             width: '200px',
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: '6px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            boxShadow: 'var(--shadow-md)',
             zIndex: 9999,
             padding: '4px 0',
           }}
@@ -111,11 +111,11 @@ const SortDropdown = ({ value, onChange, options }: { value: string, onChange: (
                 padding: '6px 12px',
                 fontSize: '12px',
                 cursor: 'pointer',
-                color: value === opt.value ? '#60a5fa' : '#cbd5e1',
+                color: value === opt.value ? 'var(--primary)' : 'var(--text-secondary)',
                 fontWeight: value === opt.value ? 600 : 400,
-                backgroundColor: value === opt.value ? 'rgba(51,65,85,0.5)' : 'transparent',
+                backgroundColor: value === opt.value ? 'var(--bg-hover)' : 'transparent',
               }}
-              onMouseEnter={(e) => { if (value !== opt.value) e.currentTarget.style.backgroundColor = '#334155'; }}
+              onMouseEnter={(e) => { if (value !== opt.value) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
               onMouseLeave={(e) => { if (value !== opt.value) e.currentTarget.style.backgroundColor = 'transparent'; }}
               onClick={() => {
                 onChange(opt.value);

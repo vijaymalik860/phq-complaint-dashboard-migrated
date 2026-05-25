@@ -73,10 +73,10 @@ const SortDropdown = ({
           top: '100%',
           right: 0,
           marginTop: 4,
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 6,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--shadow-md)',
           zIndex: 9999,
           minWidth: 190,
           padding: '4px 0',
@@ -89,11 +89,11 @@ const SortDropdown = ({
                 padding: '7px 14px',
                 fontSize: 12,
                 cursor: 'pointer',
-                color: value === opt.value ? '#60a5fa' : '#cbd5e1',
+                color: value === opt.value ? 'var(--primary)' : 'var(--text-secondary)',
                 fontWeight: value === opt.value ? 600 : 400,
-                backgroundColor: value === opt.value ? 'rgba(51,65,85,0.6)' : 'transparent',
+                backgroundColor: value === opt.value ? 'var(--bg-hover)' : 'transparent',
               }}
-              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = '#334155'; }}
+              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-hover)'; }}
               onMouseLeave={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
             >
               {opt.label}

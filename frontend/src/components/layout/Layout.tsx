@@ -173,7 +173,7 @@ export const Layout = ({ children }: LayoutProps) => {
         </div>
 
         <div className="header-center">
-          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#e2e8f0', letterSpacing: '1px', textTransform: 'uppercase', textShadow: '0 2px 4px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '1px', textTransform: 'uppercase', textShadow: theme === 'dark' ? '0 2px 4px rgba(0,0,0,0.3)' : 'none', whiteSpace: 'nowrap' }}>
             {getModuleName()}
           </span>
         </div>
@@ -187,7 +187,7 @@ export const Layout = ({ children }: LayoutProps) => {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '6px 12px',
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-input)',
               border: '1px solid var(--border)',
               borderRadius: '6px',
               color: 'var(--text-secondary)',
@@ -195,11 +195,11 @@ export const Layout = ({ children }: LayoutProps) => {
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.background = 'var(--bg-hover)';
               e.currentTarget.style.color = 'var(--text-primary)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.background = 'var(--bg-input)';
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -272,18 +272,18 @@ export const Layout = ({ children }: LayoutProps) => {
 
       {activeJobId && (
         <div style={{
-          background: 'rgba(30,41,59,0.7)',
+          background: 'var(--bg-card)',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(59,130,246,0.3)',
+          borderBottom: '1px solid var(--border)',
           padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
           gap: '14px',
           fontSize: '13px',
-          color: '#cbd5e1',
+          color: 'var(--text-secondary)',
           zIndex: 99,
           position: 'relative',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <span style={{
             width: 10, height: 10, borderRadius: '50%',
@@ -308,8 +308,8 @@ export const Layout = ({ children }: LayoutProps) => {
             }} />
           </div>
           {jobResult && (
-            <span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
-              Fetched: <strong>{jobResult.fetched.toLocaleString()}</strong> | Saved: <strong style={{ color: '#4ade80' }}>{(jobResult.created + jobResult.updated).toLocaleString()}</strong> | Errors: <strong style={{ color: jobResult.errors > 0 ? '#f87171' : '#64748b' }}>{jobResult.errors}</strong>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              Fetched: <strong style={{ color: 'var(--text-primary)' }}>{jobResult.fetched.toLocaleString()}</strong> | Saved: <strong style={{ color: 'var(--success)' }}>{(jobResult.created + jobResult.updated).toLocaleString()}</strong> | Errors: <strong style={{ color: jobResult.errors > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>{jobResult.errors}</strong>
             </span>
           )}
         </div>
@@ -343,7 +343,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid #334155' }}>
+        <div style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid var(--border)' }}>
           <button
             onClick={handleLogout}
             style={{

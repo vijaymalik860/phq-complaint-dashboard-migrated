@@ -89,15 +89,15 @@ const MultiSelectDropdown = ({
           background: hasValue
             ? 'linear-gradient(135deg,rgba(99,102,241,0.22),rgba(139,92,246,0.16))'
             : isOpen
-              ? 'rgba(99,102,241,0.1)'
-              : 'rgba(255,255,255,0.05)',
+              ? 'var(--bg-hover)'
+              : 'var(--bg-input)',
           border: hasValue
             ? '1px solid rgba(99,102,241,0.65)'
             : isOpen
-              ? '1px solid #4f6272'
-              : '1px solid #2d3f55',
+              ? '1px solid var(--primary-light)'
+              : '1px solid var(--border)',
           borderRadius: 8,
-          color: hasValue ? '#c4b5fd' : isOpen ? '#e2e8f0' : '#cbd5e1',
+          color: hasValue ? 'var(--primary-light)' : isOpen ? 'var(--text-primary)' : 'var(--text-secondary)',
           fontSize: 12, fontWeight: hasValue ? 600 : 500,
           whiteSpace: 'nowrap', minWidth: 108, maxWidth: 185,
           transition: 'all 0.18s', outline: 'none',
@@ -109,11 +109,11 @@ const MultiSelectDropdown = ({
               : 'none',
         }}
       >
-        <span style={{ color: hasValue ? '#a78bfa' : isOpen ? '#818cf8' : '#64748b', flexShrink: 0 }}>{icon}</span>
+        <span style={{ color: hasValue ? 'var(--primary-light)' : isOpen ? 'var(--primary)' : 'var(--text-muted)', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>{displayText}</span>
         {loading && (
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-            style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0, color: '#94a3b8' }}>
+            style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0, color: 'var(--text-muted)' }}>
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3"/>
             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
           </svg>
@@ -136,25 +136,25 @@ const MultiSelectDropdown = ({
           style={{
             position: 'absolute', top: 'calc(100% + 6px)', left: 0,
             minWidth: 240, maxWidth: 320,
-            background: 'linear-gradient(180deg,#0f172a 0%,#0a0f1e 100%)',
-            border: '1px solid rgba(99,102,241,0.25)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 10, zIndex: 9999,
-            boxShadow: '0 16px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(99,102,241,0.1)',
+            boxShadow: 'var(--shadow-lg)',
             overflow: 'hidden',
           }}
         >
           {/* Search */}
-          <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid #1e293b', background: '#0f172a' }}>
+          <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid var(--border)', background: 'var(--bg-dark)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6,
-              background: '#1e293b', border: '1px solid #334155', borderRadius: 6, padding: '4px 8px' }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5">
+              background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
               </svg>
               <input ref={searchRef} type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder={`Search ${label.toLowerCase()}…`}
                 onMouseDown={e => e.stopPropagation()}
                 style={{ flex: 1, background: 'none', border: 'none', outline: 'none',
-                  fontSize: 12, color: '#e2e8f0', minWidth: 0 }}
+                  fontSize: 12, color: 'var(--text-primary)', minWidth: 0 }}
               />
             </div>
           </div>
@@ -165,24 +165,24 @@ const MultiSelectDropdown = ({
               <div onClick={onAllClick} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
                 cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                color: count === 0 ? '#818cf8' : '#64748b',
-                borderBottom: '1px solid #1e293b',
+                color: count === 0 ? 'var(--primary)' : 'var(--text-muted)',
+                borderBottom: '1px solid var(--border)',
                 background: count === 0 ? 'rgba(99,102,241,0.08)' : 'transparent',
                 transition: 'background 0.15s',
               }}
-                onMouseEnter={e => { if (count !== 0) (e.currentTarget as HTMLElement).style.background = '#1e293b'; }}
+                onMouseEnter={e => { if (count !== 0) (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = count === 0 ? 'rgba(99,102,241,0.08)' : 'transparent'; }}
               >
                 <span style={{
                   width: 14, height: 14, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: count === 0 ? '2px solid #6366f1' : '2px solid #334155',
-                  background: count === 0 ? '#6366f1' : 'transparent',
+                  border: count === 0 ? '2px solid var(--primary)' : '2px solid var(--border)',
+                  background: count === 0 ? 'var(--primary)' : 'transparent',
                 }}>{count === 0 && <CheckIcon />}</span>
                 {allLabel}
               </div>
             )}
             {filtered.length === 0 ? (
-              <div style={{ padding: '12px 12px', color: '#475569', fontSize: 11, textAlign: 'center' }}>
+              <div style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: 11, textAlign: 'center' }}>
                 No results for "{search}"
               </div>
             ) : filtered.map(item => {
@@ -191,17 +191,17 @@ const MultiSelectDropdown = ({
                 <div key={item.id} onClick={() => onToggleItem(item.id)} style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
                   cursor: 'pointer', fontSize: 12,
-                  color: sel ? '#c7d2fe' : '#cbd5e1',
+                  color: sel ? 'var(--primary-dark)' : 'var(--text-primary)',
                   background: sel ? 'rgba(99,102,241,0.1)' : 'transparent',
                   transition: 'background 0.12s',
                 }}
-                  onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = '#1e293b'; }}
+                  onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = sel ? 'rgba(99,102,241,0.1)' : 'transparent'; }}
                 >
                   <span style={{
                     width: 14, height: 14, borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: sel ? '2px solid #6366f1' : '2px solid #334155',
-                    background: sel ? '#6366f1' : 'transparent', transition: 'all 0.15s',
+                    border: sel ? '2px solid var(--primary)' : '2px solid var(--border)',
+                    background: sel ? 'var(--primary)' : 'transparent', transition: 'all 0.15s',
                   }}>{sel && <CheckIcon />}</span>
                   {item.label}
                 </div>
@@ -210,7 +210,7 @@ const MultiSelectDropdown = ({
           </div>
 
           {count > 0 && (
-            <div style={{ borderTop: '1px solid #1e293b', padding: '5px 10px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ borderTop: '1px solid var(--border)', padding: '5px 10px', display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={onAllClick} style={{
                 background: 'none', border: 'none', color: '#ef4444', fontSize: 11,
                 cursor: 'pointer', padding: '2px 6px', borderRadius: 4,
@@ -343,7 +343,7 @@ export const GlobalFilterBar = () => {
 
       {/* ── Date Range ─────────────────────────────────────────────────────── */}
       <div className="filter-group" style={{ gap: 6 }}>
-        <span style={{ color: '#475569', flexShrink: 0 }}><CalIcon /></span>
+        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}><CalIcon /></span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <input type="date" value={filters.fromDate}
             onChange={e => setFilter('fromDate', e.target.value)}
@@ -351,7 +351,7 @@ export const GlobalFilterBar = () => {
             className="filter-input date-input"
             style={{ cursor: 'pointer' }}
           />
-          <span style={{ color: '#334155', fontSize: 12 }}>→</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>→</span>
           <input type="date" value={filters.toDate}
             onChange={e => setFilter('toDate', e.target.value)}
             onClick={e => 'showPicker' in HTMLInputElement.prototype && (e.currentTarget as any).showPicker()}
@@ -361,14 +361,14 @@ export const GlobalFilterBar = () => {
         </div>
         {(filters.fromDate || filters.toDate) && (
           <button onClick={() => { setFilter('fromDate',''); setFilter('toDate',''); }}
-            style={{ background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:14,padding:'0 2px',lineHeight:1 }}>
+            style={{ background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontSize:14,padding:'0 2px',lineHeight:1 }}>
             ×
           </button>
         )}
       </div>
 
       {/* Separator */}
-      <div style={{ width: 1, height: 20, background: '#1e293b', flexShrink: 0 }} />
+      <div style={{ width: 1, height: 20, background: 'var(--border)', flexShrink: 0 }} />
 
       {/* ── District ───────────────────────────────────────────────────────── */}
       <div ref={districtRef} className="filter-group" style={{ position: 'relative' }}
@@ -436,10 +436,10 @@ export const GlobalFilterBar = () => {
       {/* ── Total active count pill + Reset ────────────────────────────────── */}
       {hasAnyFilter && (
         <>
-          <div style={{ width: 1, height: 18, background: '#1e293b', flexShrink: 0 }} />
+          <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
           <span style={{
-            fontSize: 10, fontWeight: 700, color: '#818cf8',
-            background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+            fontSize: 10, fontWeight: 700, color: 'var(--primary)',
+            background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
             borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0,
           }}>
             {totalActiveFilters} active

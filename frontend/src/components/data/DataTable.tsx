@@ -419,7 +419,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
         {/* Table Title (Middle) - hide when inside ChartCard or in expanded view */}
         {title && !isFullHeight && !isCardExpanded && !hideTitleBar && (
-          <div style={{ textAlign: 'center', fontSize: '15px', fontWeight: 600, color: '#e2e8f0', padding: '0 10px' }}>
+          <div style={{ textAlign: 'center', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', padding: '0 10px' }}>
             {title}
           </div>
         )}
@@ -433,31 +433,31 @@ export function DataTable<T extends Record<string, unknown>>({
               <select
                 value={pagination.limit}
                 onChange={(e) => pagination.onLimitChange(Number(e.target.value))}
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', borderRadius: '4px', padding: '4px 6px', fontSize: '12px', outline: 'none' }}
+                style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', padding: '4px 6px', fontSize: '12px', outline: 'none' }}
               >
-                <option value={20} style={{ background: 'var(--bg-card)', color: '#fff' }}>20</option>
-                <option value={50} style={{ background: 'var(--bg-card)', color: '#fff' }}>50</option>
-                <option value={100} style={{ background: 'var(--bg-card)', color: '#fff' }}>100</option>
+                <option value={20} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>20</option>
+                <option value={50} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>50</option>
+                <option value={100} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>100</option>
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                Page <strong style={{ color: '#fff' }}>{pagination.page}</strong> of{' '}
-                <strong style={{ color: '#fff' }}>{pagination.totalPages}</strong>
+                Page <strong style={{ color: 'var(--text-primary)' }}>{pagination.page}</strong> of{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>{pagination.totalPages}</strong>
                 <span style={{ color: 'var(--text-muted)' }}> ({pagination.total} total)</span>
               </span>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <button
                   disabled={pagination.page <= 1}
                   onClick={() => pagination.onPageChange(pagination.page - 1)}
-                  style={{ padding: '4px 8px', background: pagination.page <= 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: pagination.page <= 1 ? 'var(--text-muted)' : '#fff', border: '1px solid var(--border)', borderRadius: '4px', cursor: pagination.page <= 1 ? 'not-allowed' : 'pointer' }}
+                  style={{ padding: '4px 8px', background: pagination.page <= 1 ? 'var(--bg-input)' : 'var(--bg-hover)', opacity: pagination.page <= 1 ? 0.5 : 1, color: pagination.page <= 1 ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: pagination.page <= 1 ? 'not-allowed' : 'pointer' }}
                 >
                   ←
                 </button>
                 <button
                   disabled={pagination.page >= pagination.totalPages}
                   onClick={() => pagination.onPageChange(pagination.page + 1)}
-                  style={{ padding: '4px 8px', background: pagination.page >= pagination.totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: pagination.page >= pagination.totalPages ? 'var(--text-muted)' : '#fff', border: '1px solid var(--border)', borderRadius: '4px', cursor: pagination.page >= pagination.totalPages ? 'not-allowed' : 'pointer' }}
+                  style={{ padding: '4px 8px', background: pagination.page >= pagination.totalPages ? 'var(--bg-input)' : 'var(--bg-hover)', opacity: pagination.page >= pagination.totalPages ? 0.5 : 1, color: pagination.page >= pagination.totalPages ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: pagination.page >= pagination.totalPages ? 'not-allowed' : 'pointer' }}
                 >
                   →
                 </button>
@@ -479,7 +479,7 @@ export function DataTable<T extends Record<string, unknown>>({
                       }
                     }
                   }}
-                  style={{ width: '50px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', borderRadius: '4px', padding: '4px', fontSize: '12px', outline: 'none', textAlign: 'center' }}
+                  style={{ width: '50px', background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', padding: '4px', fontSize: '12px', outline: 'none', textAlign: 'center' }}
                 />
                 <button
                   onClick={() => {
@@ -623,9 +623,9 @@ export function DataTable<T extends Record<string, unknown>>({
                 width: '100%',
                 padding: '8px 16px 8px 36px',
                 borderRadius: '6px',
-                background: 'rgba(255, 255, 255, 0.05)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border)',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 fontSize: '13px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
