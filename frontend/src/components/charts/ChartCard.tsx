@@ -26,7 +26,15 @@ const ViewPill = ({
   viewMode: 'chart' | 'table';
   onViewModeChange: (m: 'chart' | 'table') => void;
 }) => (
-  <div style={{ display: 'flex', backgroundColor: '#0f172a', borderRadius: 5, padding: 2, gap: 0, flexShrink: 0 }}>
+  <div style={{
+    display: 'flex',
+    backgroundColor: 'var(--bg-dark)',
+    border: '1px solid var(--border)',
+    borderRadius: 5,
+    padding: 2,
+    gap: '2px',
+    flexShrink: 0
+  }}>
     {(['chart', 'table'] as const).map((m) => (
       <button
         key={m}
@@ -36,11 +44,11 @@ const ViewPill = ({
           borderRadius: 4,
           border: 'none',
           fontSize: 11,
-          fontWeight: 500,
+          fontWeight: 600,
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          backgroundColor: viewMode === m ? '#3b82f6' : 'transparent',
-          color: viewMode === m ? '#fff' : '#64748b',
+          backgroundColor: viewMode === m ? 'var(--primary)' : 'transparent',
+          color: viewMode === m ? '#fff' : 'var(--text-muted)',
           transition: 'all 0.15s ease',
         }}
       >
@@ -49,6 +57,7 @@ const ViewPill = ({
     ))}
   </div>
 );
+
 
 export const ChartCard = ({
   title,
@@ -82,7 +91,7 @@ export const ChartCard = ({
                 <ViewPill viewMode={viewMode} onViewModeChange={onViewModeChange} />
               )}
             </div>
-            {subtitle && <span style={{ fontSize: '12px', color: '#94a3b8' }}>{subtitle}</span>}
+            {subtitle && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{subtitle}</span>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             {viewMode === 'chart' && chartActions}
