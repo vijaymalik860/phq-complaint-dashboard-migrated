@@ -518,8 +518,8 @@ export function DataTable<T extends Record<string, unknown>>({
                       position: 'sticky',
                       left: 0,
                       zIndex: 20,
-                      backgroundColor: 'var(--bg-dark)',
-                      boxShadow: '2px 0 6px rgba(0,0,0,0.6)',
+                      backgroundColor: 'var(--table-header-bg)',
+                      boxShadow: '2px 0 6px rgba(0,0,0,0.06)',
                     } : {}),
                   }}
                   onClick={() => col.sortable && handleSort(col.key)}
@@ -552,8 +552,8 @@ export function DataTable<T extends Record<string, unknown>>({
                           position: 'sticky',
                           left: 0,
                           zIndex: 10,
-                          backgroundColor: 'var(--bg-dark)',
-                          boxShadow: '2px 0 6px rgba(0,0,0,0.6)',
+                          backgroundColor: 'var(--table-frozen-bg)',
+                          boxShadow: '2px 0 6px rgba(0,0,0,0.06)',
                         } : {}),
                       }}
                     >
@@ -584,8 +584,8 @@ export function DataTable<T extends Record<string, unknown>>({
                           position: 'sticky',
                           left: 0,
                           zIndex: 15,
-                          backgroundColor: 'var(--bg-dark)',
-                          boxShadow: '2px -2px 6px rgba(0,0,0,0.5)',
+                          backgroundColor: 'var(--table-frozen-bg)',
+                          boxShadow: '2px -2px 6px rgba(0,0,0,0.06)',
                         } : {}),
                       }}
                     >
