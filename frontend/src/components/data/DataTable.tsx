@@ -579,7 +579,7 @@ export function DataTable<T extends Record<string, unknown>>({
                       style={{
                         textAlign: col.align,
                         padding: isFullHeight ? '14px 24px' : '10px 16px',
-                        color: colIdx === 0 ? '#f8fafc' : '#60a5fa',
+                        color: colIdx === 0 ? 'var(--text-primary)' : 'var(--primary)',
                         ...(colIdx === 0 ? {
                           position: 'sticky',
                           left: 0,

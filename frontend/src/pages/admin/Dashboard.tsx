@@ -404,7 +404,7 @@ export const DashboardPage = () => {
 
   const renderMatrixDays = (col: any, row: any) => {
     if (col.key === 'district') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
-    if (col.key === 'total') return mkCell(row.total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
+    if (col.key === 'total') return mkCell(row.total, 'var(--text-primary)', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
     if (col.key === 'u7')  return mkCell(row.u7,  'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'u15') return mkCell(row.u15, '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'u30') return mkCell(row.u30, '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
@@ -433,7 +433,7 @@ export const DashboardPage = () => {
       ) : <span style={{ color, fontWeight: fw }}>{val ?? 0}%</span>
     );
     if (col.key === 'district')  return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.district}</span>;
-    if (col.key === 'pct_total') return mkPct(row.pct_total, '#e2e8f0', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
+    if (col.key === 'pct_total') return mkPct(row.pct_total, 'var(--text-primary)', 600, row.district ? () => openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')) : undefined);
     if (col.key === 'pct_u7')   return mkPct(row.pct_u7,   'var(--text-muted)', undefined, row.district ? () => openDrawer(`${row.district} — Pending <7 Days`,       drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u7'  })) : undefined);
     if (col.key === 'pct_u15')  return mkPct(row.pct_u15,  '#eab308',          undefined, row.district ? () => openDrawer(`${row.district} — Pending 7-15 Days`,    drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u15' })) : undefined);
     if (col.key === 'pct_u30')  return mkPct(row.pct_u30,  '#fb923c',          500,       row.district ? () => openDrawer(`${row.district} — Pending 15-30 Days`,   drawerFiltersForDistrict(row.district, 'pending', { pendencyAge: 'u30' })) : undefined);
@@ -801,7 +801,7 @@ export const DashboardPage = () => {
                 data={sortedDistricts}
                 columns={[
                   { key: 'district', label: 'District', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — All`, drawerFiltersForDistrict(row.district, 'all')); }}>{row.total}</span> : <span style={{ fontWeight: 600 }}>{row.total}</span> },
                   { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#ef4444', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — Pending`, drawerFiltersForDistrict(row.district, 'pending')); }}>{row.pending}</span> : <span style={{ color: '#ef4444' }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed ? row.pending_pct.toFixed(1) : row.pending_pct}%</span> },
                   { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => row.district ? <span style={{ color: '#16a34a', cursor: 'pointer', textDecoration: 'underline dotted' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.district} — Disposed`, drawerFiltersForDistrict(row.district, 'disposed')); }}>{row.disposed}</span> : <span style={{ color: '#16a34a' }}>{row.disposed}</span> },
@@ -851,7 +851,7 @@ export const DashboardPage = () => {
                 data={sortedCategories}
                 columns={[
                   { key: 'category', label: 'Class of Incident', sortable: true },
-                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: '#60a5fa' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
+                  { key: 'total', label: 'Total Reg', sortable: true, align: 'center', render: (row) => <span style={{ fontWeight: 600, cursor: 'pointer', color: 'var(--primary)' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  All`, drawerFiltersForCategory(row.category)); }}>{row.total}</span> },
                   { key: 'pending', label: 'Pending', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  Pending`, drawerFiltersForCategory(row.category, 'pending')); }}>{row.pending}</span> },
                   { key: 'pending_pct', label: 'Pending %', sortable: true, align: 'center', render: (row) => <span style={{ color: '#dc2626', fontWeight: 600, display: 'inline-block', minWidth: '45px' }}>{row.pending_pct?.toFixed(1)}%</span> },
                   { key: 'disposed', label: 'Disposed', sortable: true, align: 'center', render: (row) => <span style={{ cursor: 'pointer', color: '#16a34a' }} onClick={(e) => { e.stopPropagation(); openDrawer(`${row.category}  Disposed`, drawerFiltersForCategory(row.category, 'disposed')); }}>{row.disposed}</span> },

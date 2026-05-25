@@ -247,17 +247,19 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
     return true;
   };
 
+
   const navBtn = (disabled: boolean, onClick: () => void, label: string) => (
     <button disabled={disabled} onClick={onClick} style={{
-      padding: '3px 8px', background: disabled ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)',
-      color: disabled ? '#475569' : '#e2e8f0', border: '1px solid #334155',
+      padding: '3px 8px', background: disabled ? 'var(--bg-input)' : 'var(--bg-hover)',
+      opacity: disabled ? 0.4 : 1,
+      color: disabled ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border)',
       borderRadius: 4, cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 13,
     }}>{label}</button>
   );
 
   const ctrlStyle: React.CSSProperties = {
-    background: '#1e293b', border: '1px solid #334155', borderRadius: 6,
-    color: '#e2e8f0', padding: '5px 9px', fontSize: 12, outline: 'none', cursor: 'pointer',
+    background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6,
+    color: 'var(--text-primary)', padding: '5px 9px', fontSize: 12, outline: 'none', cursor: 'pointer',
   };
 
   return (
@@ -459,28 +461,28 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
                         </span>
                       </td>
                       <td style={{ padding: '8px 11px' }}>
-                        <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{r.fullName}</div>
-                        {r.gender  && <div style={{ fontSize: 10, color: '#64748b', marginTop: 1 }}>{r.gender}</div>}
-                        {r.address && <div style={{ fontSize: 10, color: '#475569', marginTop: 1, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.address}</div>}
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.fullName}</div>
+                        {r.gender  && <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>{r.gender}</div>}
+                        {r.address && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.address}</div>}
                       </td>
                       <td style={{ padding: '8px 11px', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontFamily: 'monospace', color: '#60a5fa' }}>{r.mobile}</span>
+                          <span style={{ fontFamily: 'monospace', color: 'var(--primary)' }}>{r.mobile}</span>
                           {isValidIndianMobile(r.mobile) ? (
                             <span title="Valid Indian mobile number"
-                              style={{ fontSize: 9, color: '#34d399', fontWeight: 700, lineHeight: 1,
-                                border: '1px solid rgba(52,211,153,0.4)', borderRadius: 3,
+                              style={{ fontSize: 9, color: 'var(--success)', fontWeight: 700, lineHeight: 1,
+                                border: '1px solid var(--border)', borderRadius: 3,
                                 padding: '1px 3px', flexShrink: 0 }}>✓</span>
                           ) : (
                             <span title="Invalid / unverifiable mobile number"
-                              style={{ fontSize: 9, color: '#f87171', fontWeight: 700, lineHeight: 1,
-                                border: '1px solid rgba(248,113,113,0.4)', borderRadius: 3,
+                              style={{ fontSize: 9, color: 'var(--danger)', fontWeight: 700, lineHeight: 1,
+                                border: '1px solid var(--border)', borderRadius: 3,
                                 padding: '1px 3px', flexShrink: 0 }}>✗</span>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '8px 11px', color: '#94a3b8' }}>{r.districtName || '—'}</td>
-                      <td style={{ padding: '8px 11px', color: '#94a3b8' }}>{r.psName || '—'}</td>
+                      <td style={{ padding: '8px 11px', color: 'var(--text-secondary)' }}>{r.districtName || '—'}</td>
+                      <td style={{ padding: '8px 11px', color: 'var(--text-secondary)' }}>{r.psName || '—'}</td>
                       <td style={{ padding: '8px 11px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                           <span style={{ minWidth: 26, textAlign: 'right', fontWeight: 700, fontSize: 13,
@@ -522,16 +524,16 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
             position: 'sticky', bottom: 0, zIndex: 10,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap' }}>Rows:</span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Rows:</span>
               <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); resetPage(); }}
-                style={{ background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 4, padding: '3px 5px', fontSize: 11, outline: 'none' }}>
-                {[20,50,100,200].map(n => <option key={n} value={n} style={{ background: '#1e293b' }}>{n}</option>)}
+                style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 4, padding: '3px 5px', fontSize: 11, outline: 'none' }}>
+                {[20,50,100,200].map(n => <option key={n} value={n} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{n}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap' }}>
-                Page <strong style={{ color: '#e2e8f0' }}>{page}</strong> / <strong style={{ color: '#e2e8f0' }}>{totalPages}</strong>
-                <span style={{ color: '#475569' }}> · {total.toLocaleString()} total</span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                Page <strong style={{ color: 'var(--text-primary)' }}>{page}</strong> / <strong style={{ color: 'var(--text-primary)' }}>{totalPages}</strong>
+                <span style={{ color: 'var(--text-muted)' }}> · {total.toLocaleString()} total</span>
               </span>
               <div style={{ display: 'flex', gap: 3 }}>
                 {navBtn(page<=1,          ()=>setPage(1),          '«')}
@@ -539,15 +541,15 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
                 {navBtn(page>=totalPages, ()=>setPage(p=>p+1),     '›')}
                 {navBtn(page>=totalPages, ()=>setPage(totalPages),  '»')}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 4, borderLeft: '1px solid #1e293b', paddingLeft: 8 }}>
-                <span style={{ fontSize: 10, color: '#64748b' }}>Go:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 4, borderLeft: '1px solid var(--border)', paddingLeft: 8 }}>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Go:</span>
                 <input type="number" min={1} max={totalPages} value={gotoPage}
                   onChange={e => setGotoPage(e.target.value)}
                   onKeyDown={e => { if (e.key==='Enter') { const p=parseInt(gotoPage,10); if(!isNaN(p)&&p>=1&&p<=totalPages){setPage(p);setGotoPage('');} } }}
-                  style={{ width: 42, background: '#1e293b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 4, padding: '2px 4px', fontSize: 11, outline: 'none', textAlign: 'center' }}
+                  style={{ width: 42, background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 4px', fontSize: 11, outline: 'none', textAlign: 'center' }}
                 />
                 <button onClick={() => { const p=parseInt(gotoPage,10); if(!isNaN(p)&&p>=1&&p<=totalPages){setPage(p);setGotoPage('');} }}
-                  style={{ padding: '2px 7px', background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>
+                  style={{ padding: '2px 7px', background: 'rgba(99,102,241,0.15)', color: 'var(--primary)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>
                   Go
                 </button>
               </div>

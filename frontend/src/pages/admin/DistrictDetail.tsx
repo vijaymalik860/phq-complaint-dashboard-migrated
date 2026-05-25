@@ -104,6 +104,13 @@ export const DistrictDetail = () => {
   const { district } = useParams<{ district: string }>();
   const navigate = useNavigate();
   const [catSort, setCatSort] = useState<string>('pending');
+
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const primaryBlueColor = isLight ? 'var(--primary)' : '#60a5fa';
+  const successColor = isLight ? 'var(--success)' : '#4ade80';
+  const warningColor = isLight ? 'var(--warning)' : '#fbbf24';
+  const u15Color = isLight ? '#d97706' : '#eab308';
+  const u30Color = isLight ? '#ea580c' : '#fb923c';
   const [psTableSort, setPsTableSort] = useState<{ key: string; dir: 'asc' | 'desc' | null } | null>(null);
   const [pendencyTableSort, setPendencyTableSort] = useState<{ key: string; dir: 'asc' | 'desc' | null } | null>(null);
   const [disposalTableSort, setDisposalTableSort] = useState<{ key: string; dir: 'asc' | 'desc' | null } | null>(null);
@@ -208,17 +215,17 @@ export const DistrictDetail = () => {
 
   const renderPsCell = (col: Column<any>, row: any) => {
     if (col.key === 'ps') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.ps}</span>;
-    if (col.key === 'total') return <ClickableCell value={row.total} psName={row.ps} psId={row.psId} statusGroup="all" color="#60a5fa" />;
-    if (col.key === 'disposed') return <ClickableCell value={row.disposed} psName={row.ps} psId={row.psId} statusGroup="disposed" color="#4ade80" />;
-    if (col.key === 'pending') return <ClickableCell value={row.pending} psName={row.ps} psId={row.psId} statusGroup="pending" color="#fbbf24" />;
+    if (col.key === 'total') return <ClickableCell value={row.total} psName={row.ps} psId={row.psId} statusGroup="all" color={primaryBlueColor} />;
+    if (col.key === 'disposed') return <ClickableCell value={row.disposed} psName={row.ps} psId={row.psId} statusGroup="disposed" color={successColor} />;
+    if (col.key === 'pending') return <ClickableCell value={row.pending} psName={row.ps} psId={row.psId} statusGroup="pending" color={warningColor} />;
     if (col.key === 'u7') return <ClickableCell value={row.u7} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u7' }} color="var(--text-muted)" />;
-    if (col.key === 'u15') return <ClickableCell value={row.u15} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u15' }} color="#eab308" />;
-    if (col.key === 'u30') return <ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color="#fb923c" fw={500} />;
+    if (col.key === 'u15') return <ClickableCell value={row.u15} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u15' }} color={u15Color} />;
+    if (col.key === 'u30') return <ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color={u30Color} fw={500} />;
     if (col.key === 'o30') return <ClickableCell value={row.o30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o30' }} color="#ef4444" fw="bold" />;
     if (col.key === 'o60') return <ClickableCell value={row.o60 || 0} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o60' }} color="#b91c1c" fw="bold" />;
     if (col.key === 'avgDisposalDays') {
       const val = row.avgDisposalDays;
-      return <span style={{ color: '#c084fc' }}>{typeof val === 'number' ? `${val}d` : '—'}</span>;
+      return <span style={{ color: isLight ? 'var(--primary-dark, #4f46e5)' : '#c084fc' }}>{typeof val === 'number' ? `${val}d` : '—'}</span>;
     }
     return row[col.key];
   };
@@ -237,10 +244,10 @@ export const DistrictDetail = () => {
   const renderPendencyDays = (col: Column<any>, row: any) => {
     const total = row.pending || 1;
     if (col.key === 'ps') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.ps}</span>;
-    if (col.key === 'pending') return <ClickableCell value={row.pending} psName={row.ps} psId={row.psId} statusGroup="pending" color="#60a5fa" />;
+    if (col.key === 'pending') return <ClickableCell value={row.pending} psName={row.ps} psId={row.psId} statusGroup="pending" color={primaryBlueColor} />;
     if (col.key === 'u7') return <span style={{ color: 'var(--text-muted)' }}><ClickableCell value={row.u7} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u7' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u7 || 0) * 100 / total)}%)</span></span>;
-    if (col.key === 'u15') return <span style={{ color: '#eab308' }}><ClickableCell value={row.u15} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u15' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u15 || 0) * 100 / total)}%)</span></span>;
-    if (col.key === 'u30') return <span style={{ color: '#fb923c', fontWeight: 500 }}><ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u30 || 0) * 100 / total)}%)</span></span>;
+    if (col.key === 'u15') return <span style={{ color: u15Color }}><ClickableCell value={row.u15} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u15' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u15 || 0) * 100 / total)}%)</span></span>;
+    if (col.key === 'u30') return <span style={{ color: u30Color, fontWeight: 500 }}><ClickableCell value={row.u30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'u30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.u30 || 0) * 100 / total)}%)</span></span>;
     if (col.key === 'o30') return <span style={{ color: '#ef4444', fontWeight: 'bold' }}><ClickableCell value={row.o30} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.o30 || 0) * 100 / total)}%)</span></span>;
     if (col.key === 'o60') return <span style={{ color: '#b91c1c', fontWeight: 'bold' }}><ClickableCell value={row.o60 || 0} psName={row.ps} psId={row.psId} statusGroup="pending" extra={{ pendencyAge: 'o60' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.o60 || 0) * 100 / total)}%)</span></span>;
     return row[col.key];
@@ -261,10 +268,10 @@ export const DistrictDetail = () => {
     const disposedWithDate = row.disposed || 0;
     const denominator = disposedWithDate || 1;
     if (col.key === 'ps') return <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{row.ps}</span>;
-    if (col.key === 'disposed') return <ClickableCell value={disposedWithDate} psName={row.ps} psId={row.psId} statusGroup="disposed" color="#4ade80" />;
-    if (col.key === 'du7') return <span style={{ color: '#4ade80' }}><ClickableCell value={row.du7} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u7' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du7 || 0) * 100 / denominator)}%)</span></span>;
-    if (col.key === 'du15') return <span style={{ color: '#a3e635' }}><ClickableCell value={row.du15} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u15' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du15 || 0) * 100 / denominator)}%)</span></span>;
-    if (col.key === 'du30') return <span style={{ color: '#eab308' }}><ClickableCell value={row.du30} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du30 || 0) * 100 / denominator)}%)</span></span>;
+    if (col.key === 'disposed') return <ClickableCell value={disposedWithDate} psName={row.ps} psId={row.psId} statusGroup="disposed" color={successColor} />;
+    if (col.key === 'du7') return <span style={{ color: successColor }}><ClickableCell value={row.du7} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u7' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du7 || 0) * 100 / denominator)}%)</span></span>;
+    if (col.key === 'du15') return <span style={{ color: isLight ? '#16a34a' : '#a3e635' }}><ClickableCell value={row.du15} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u15' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du15 || 0) * 100 / denominator)}%)</span></span>;
+    if (col.key === 'du30') return <span style={{ color: u15Color }}><ClickableCell value={row.du30} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'u30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.du30 || 0) * 100 / denominator)}%)</span></span>;
     if (col.key === 'do30') return <span style={{ color: '#ef4444', fontWeight: 'bold' }}><ClickableCell value={row.do30} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'o30' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.do30 || 0) * 100 / denominator)}%)</span></span>;
     if (col.key === 'do60') return <span style={{ color: '#b91c1c', fontWeight: 'bold' }}><ClickableCell value={row.do60 || 0} psName={row.ps} psId={row.psId} statusGroup="disposed" extra={{ disposalAge: 'o60' }} color="inherit" /> <span style={{ fontSize: '11px', opacity: 0.6 }}>({Math.round((row.do60 || 0) * 100 / denominator)}%)</span></span>;
     return row[col.key];
