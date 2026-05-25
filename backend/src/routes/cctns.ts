@@ -15,6 +15,8 @@ import {
   MasterLookups,
   remapComplaintMasterIds,
   getDistrictNameByIdMap,
+  getPoliceStationNameByIdMap,
+  getOfficeNameByIdMap,
 } from '../services/master-mapping.js';
 import { syncDistricts, syncOffices, syncPoliceStationsByDistrict } from './government.js';
 import { buildPrismaWhereClause } from '../utils/filters.js';
@@ -646,16 +648,30 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
       prisma.complaint.count({ where }),
     ]);
 
-    const districtMap = await getDistrictNameByIdMap();
+    const [districtMap, psMap, officeMap] = await Promise.all([
+      getDistrictNameByIdMap(),
+      getPoliceStationNameByIdMap(),
+      getOfficeNameByIdMap(),
+    ]);
     const enrichedRecords = records.map(c => {
       let resolvedDistrictName = c.districtName;
       if (c.districtMasterId) {
         resolvedDistrictName = districtMap.get(c.districtMasterId.toString()) || resolvedDistrictName;
       }
+      let resolvedPsName = '-';
+      if (c.policeStationMasterId) {
+        resolvedPsName = psMap.get(c.policeStationMasterId.toString()) || '-';
+      }
+      let resolvedOfficeName = '-';
+      if (c.officeMasterId) {
+        resolvedOfficeName = officeMap.get(c.officeMasterId.toString()) || '-';
+      }
       return {
         ...c,
         districtMasterId: c.districtMasterId?.toString(),
         districtName: resolvedDistrictName || c.addressDistrict || '-',
+        submitPsName: resolvedPsName,
+        submitOfficeName: resolvedOfficeName,
       };
     });
 

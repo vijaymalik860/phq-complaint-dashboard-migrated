@@ -3,7 +3,7 @@ import { prisma } from '../config/database.js';
 import { Prisma } from '@prisma/client';
 import { sendSuccess, sendCached } from '../utils/response.js';
 import { authenticate } from '../middleware/auth.js';
-import { getDistrictNameByIdMap, getPoliceStationNameByIdMap } from '../services/master-mapping.js';
+import { getDistrictNameByIdMap, getPoliceStationNameByIdMap, getOfficeNameByIdMap } from '../services/master-mapping.js';
 import { buildPrismaWhereClause, buildRawWhereClause } from '../utils/filters.js';
 import { cached } from '../utils/cache.js';
 
@@ -628,31 +628,49 @@ export const reportRoutes = async (fastify: FastifyInstance) => {
       LIMIT ${limitRaw} OFFSET ${offsetRaw}
     `;
 
-    const items = rows.map(r => ({
-      complRegNum:           r.complRegNum,
-      complRegDt:            r.complRegDt,
-      complSrno:             r.complSrno,
-      firstName:             r.firstName,
-      lastName:              r.lastName,
-      gender:                r.gender,
-      age:                   r.age,
-      mobile:                r.mobile,
-      email:                 r.email,
-      complainantType:       r.complainantType,
-      addressLine1:          r.addressLine1,
-      addressLine2:          r.addressLine2,
-      addressLine3:          r.addressLine3,
-      village:               r.village,
-      tehsil:                r.tehsil,
-      addressDistrict:       r.addressDistrict,
-      addressPs:             r.addressPs,
-      districtName:          r.districtName,
-      districtMasterId:      r.districtMasterId?.toString() ?? null,
-      policeStationMasterId: r.policeStationMasterId?.toString() ?? null,
-      officeMasterId:        r.officeMasterId?.toString() ?? null,
-      submitPsCd:            r.submitPsCd,
-      submitOfficeCd:        r.submitOfficeCd,
-      receptionMode:         r.receptionMode,
+    const [psMap, officeMap] = await Promise.all([
+      getPoliceStationNameByIdMap(),
+      getOfficeNameByIdMap(),
+    ]);
+
+    const items = rows.map(r => {
+      let resolvedPsName = '-';
+      if (r.policeStationMasterId) {
+        resolvedPsName = psMap.get(r.policeStationMasterId.toString()) || '-';
+      }
+
+      let resolvedOfficeName = '-';
+      if (r.officeMasterId) {
+        resolvedOfficeName = officeMap.get(r.officeMasterId.toString()) || '-';
+      }
+
+      return {
+        complRegNum:           r.complRegNum,
+        complRegDt:            r.complRegDt,
+        complSrno:             r.complSrno,
+        firstName:             r.firstName,
+        lastName:              r.lastName,
+        gender:                r.gender,
+        age:                   r.age,
+        mobile:                r.mobile,
+        email:                 r.email,
+        complainantType:       r.complainantType,
+        addressLine1:          r.addressLine1,
+        addressLine2:          r.addressLine2,
+        addressLine3:          r.addressLine3,
+        village:               r.village,
+        tehsil:                r.tehsil,
+        addressDistrict:       r.addressDistrict,
+        addressPs:             r.addressPs,
+        districtName:          r.districtName,
+        districtMasterId:      r.districtMasterId?.toString() ?? null,
+        policeStationMasterId: r.policeStationMasterId?.toString() ?? null,
+        officeMasterId:        r.officeMasterId?.toString() ?? null,
+        submitPsCd:            r.submitPsCd,
+        submitPsName:          resolvedPsName,
+        submitOfficeCd:        r.submitOfficeCd,
+        submitOfficeName:      resolvedOfficeName,
+        receptionMode:         r.receptionMode,
       branch:                r.branch,
       complDesc:             r.complDesc,
       complaintSource:       r.complaintSource,
@@ -678,7 +696,8 @@ export const reportRoutes = async (fastify: FastifyInstance) => {
       ioDetails:             r.ioDetails,
       createdAt:             r.createdAt,
       updatedAt:             r.updatedAt,
-    }));
+    };
+  });
 
     const total = Number(countRows[0]?.total || 0);
     const totalPages = Math.max(1, Math.ceil(total / pageSize));

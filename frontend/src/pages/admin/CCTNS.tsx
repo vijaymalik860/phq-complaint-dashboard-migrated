@@ -462,7 +462,9 @@ export const CCTNSPage = () => {
       render: (row) => <span>{row.officeMasterId != null ? String(row.officeMasterId) : '—'}</span>,
     },
     { key: 'submitPsCd', label: 'Submit PS Code', sortable: false },
+    { key: 'submitPsName', label: 'Submit PS Name', sortable: false },
     { key: 'submitOfficeCd', label: 'Submit Office Code', sortable: false },
+    { key: 'submitOfficeName', label: 'Submit Office Name', sortable: false },
     { key: 'receptionMode', label: 'Reception Mode', sortable: false },
     { key: 'branch', label: 'Branch', sortable: false },
 

@@ -126,6 +126,18 @@ export const complaintRoutes = async (fastify: FastifyInstance) => {
         enriched.districtName = district.name;
       }
     }
+    if (complaint.policeStationMasterId) {
+      const station = await prisma.policeStation.findUnique({ where: { id: complaint.policeStationMasterId } });
+      if (station) {
+        enriched.submitPsName = station.name;
+      }
+    }
+    if (complaint.officeMasterId) {
+      const office = await prisma.office.findUnique({ where: { id: complaint.officeMasterId } });
+      if (office) {
+        enriched.submitOfficeName = office.name;
+      }
+    }
 
     return sendSuccess(reply, enriched);
   });
