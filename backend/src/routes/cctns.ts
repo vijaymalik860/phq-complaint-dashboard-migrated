@@ -832,6 +832,57 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     }
   });
 
+  // —— GET Active Sync Status (Manual or Background Auto-Sync) ——
+  fastify.get('/cctns/active-sync', {
+    preHandler: [authenticate],
+  }, async (request, reply) => {
+    // 1. Check if there is an active manual job in fetchJobs
+    let activeManualJob: any = null;
+    for (const job of fetchJobs.values()) {
+      if (job.status === 'running' || job.status === 'pending') {
+        activeManualJob = job;
+        break;
+      }
+    }
+
+    if (activeManualJob) {
+      return sendSuccess(reply, {
+        active: true,
+        source: 'manual',
+        id: activeManualJob.id,
+        status: activeManualJob.status,
+        progress: activeManualJob.progress,
+        progressPercentage: activeManualJob.progressPercentage,
+        result: activeManualJob.result,
+        error: activeManualJob.error,
+        startedAt: activeManualJob.startedAt,
+      });
+    }
+
+    // 2. Import activeBackgroundSync from cctns-sync-job.js
+    const { activeBackgroundSync } = await import('../jobs/cctns-sync-job.js');
+
+    if (activeBackgroundSync.status === 'running') {
+      return sendSuccess(reply, {
+        active: true,
+        source: 'auto',
+        id: 'auto-sync',
+        status: 'running',
+        progress: activeBackgroundSync.progress,
+        progressPercentage: activeBackgroundSync.progressPercentage,
+        result: {
+          fetched: activeBackgroundSync.fetched,
+          upserted: activeBackgroundSync.upserted,
+          errors: activeBackgroundSync.errors,
+        },
+        startedAt: activeBackgroundSync.startedAt,
+      });
+    }
+
+    // 3. No active sync running
+    return sendSuccess(reply, { active: false });
+  });
+
   // —— Poll fetch job status ——
   fastify.get('/cctns/fetch-status/:jobId', {
     preHandler: [authenticate],

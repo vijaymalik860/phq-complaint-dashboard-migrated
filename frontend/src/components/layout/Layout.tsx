@@ -4,7 +4,6 @@ import { GlobalFilterBar } from './GlobalFilterBar';
 import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { cctnsApi } from '../../services/api';
 export { useChartExpand } from '../../contexts/ChartContext';
 
 interface LayoutProps {
@@ -37,87 +36,81 @@ export const Layout = ({ children }: LayoutProps) => {
   const queryClient = useQueryClient();
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Poll localStorage change in case sync is triggered on CCTNS tab
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const id = localStorage.getItem('cctnsActiveJobId');
-      setActiveJobId(id);
-      if (id) {
-        setJobStatus(localStorage.getItem('cctnsActiveJobStatus') || 'pending');
-      } else {
-        setJobStatus('');
-        setJobProgress('');
-        setJobPercent(0);
-        setJobError('');
-        setJobResult(null);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    // Also check on an interval in case storage event doesn't fire on same window
-    const interval = setInterval(handleStorageChange, 1000);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const jobQuery = useQuery({
-    queryKey: ['global-cctns-fetch-job', activeJobId],
-    queryFn: () => {
-      if (!activeJobId) throw new Error('No active job');
-      return cctnsApi.fetchStatus(activeJobId);
+  // Poll the active sync endpoint (works for BOTH manual sync jobs and background auto-syncs)
+  const activeSyncQuery = useQuery({
+    queryKey: ['global-active-sync'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return { success: true, data: { active: false } };
+      const response = await fetch('/api/cctns/active-sync', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch active sync status');
+      return response.json();
     },
-    enabled: !!activeJobId,
     refetchInterval: (query) => {
-      if (query.state.status === 'error' || query.state.error) return false;
-      const status = query.state.data?.data?.status;
-      if (status === 'success' || status === 'error') return false;
-      return 2000;
+      // Poll every 2 seconds if there is an active sync running, otherwise every 10 seconds
+      const isActive = query.state.data?.data?.active;
+      return isActive ? 2000 : 10000;
     },
+    retry: false,
   });
 
   useEffect(() => {
-    if (jobQuery.isError) {
-      const error: any = jobQuery.error;
-      if (error?.response?.status === 404) {
-        localStorage.removeItem('cctnsActiveJobId');
-        localStorage.removeItem('cctnsJobStartedAt');
-        localStorage.removeItem('cctnsActiveJobStatus');
-        setActiveJobId(null);
-        setJobStatus('');
-      } else {
-        setJobStatus('error');
-        setJobError('Failed to fetch job status');
-      }
-    } else if (jobQuery.data?.data) {
-      const data = jobQuery.data.data;
-      setJobStatus(data.status);
-      localStorage.setItem('cctnsActiveJobStatus', data.status);
-      setJobProgress(data.progress || '');
-      setJobPercent(data.progressPercentage || 0);
-      setJobError(data.error || '');
-      setJobResult(data.result || null);
+    if (activeSyncQuery.data?.data) {
+      const data = activeSyncQuery.data.data;
+      if (data.active) {
+        // Clear any pending clearout timers if a sync is running
+        if (pollRef.current) {
+          clearTimeout(pollRef.current);
+          pollRef.current = null;
+        }
 
-      if (data.status === 'success' || data.status === 'error') {
-        queryClient.invalidateQueries({ queryKey: ['cctns-synced'] });
-        queryClient.invalidateQueries({ queryKey: ['cctns-history'] });
-        queryClient.invalidateQueries({ queryKey: ['cctns-last-sync-date'] });
-        
-        if (pollRef.current) clearTimeout(pollRef.current);
-        pollRef.current = setTimeout(() => {
-          localStorage.removeItem('cctnsActiveJobId');
-          localStorage.removeItem('cctnsJobStartedAt');
-          localStorage.removeItem('cctnsActiveJobStatus');
-          setActiveJobId(null);
-          setJobStatus('');
-          setJobProgress('');
-          setJobPercent(0);
-          setJobError('');
+        setActiveJobId(data.id || 'sync-active');
+        setJobStatus(data.status || 'running');
+        setJobProgress(data.progress || 'Sync in progress...');
+        setJobPercent(data.progressPercentage || 0);
+        setJobError(data.error || '');
+
+        if (data.result) {
+          setJobResult({
+            fetched: data.result.fetched || 0,
+            created: data.result.upserted || 0,
+            updated: 0,
+            errors: data.result.errors || 0,
+          });
+        } else {
           setJobResult(null);
-        }, 5000);
+        }
+      } else {
+        // If it transitioned from active to inactive, mark it as completed successfully
+        if (activeJobId && activeJobId !== '') {
+          setJobStatus('success');
+          setJobPercent(100);
+          setJobProgress('Sync completed successfully!');
+
+          // Refresh all dashboard queries
+          queryClient.invalidateQueries({ queryKey: ['cctns-synced'] });
+          queryClient.invalidateQueries({ queryKey: ['cctns-history'] });
+          queryClient.invalidateQueries({ queryKey: ['cctns-last-sync-date'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['district-analysis'] });
+
+          // Keep progress bar visible in green success state for 5 seconds, then hide it
+          if (pollRef.current) clearTimeout(pollRef.current);
+          pollRef.current = setTimeout(() => {
+            setActiveJobId(null);
+            setJobStatus('');
+            setJobProgress('');
+            setJobPercent(0);
+            setJobError('');
+            setJobResult(null);
+            pollRef.current = null;
+          }, 5000);
+        }
       }
     }
-  }, [jobQuery.data, jobQuery.isError, jobQuery.error, queryClient]);
+  }, [activeSyncQuery.data, queryClient, activeJobId]);
 
   // Count how many independent filter groups are set
   const activeFilterCount = [

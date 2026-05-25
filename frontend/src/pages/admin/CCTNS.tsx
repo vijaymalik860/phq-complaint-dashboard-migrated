@@ -899,124 +899,9 @@ export const CCTNSPage = () => {
 
 
 
-        {/* —— Live Tab: Date Range + Fetch Button + Latest Records —— */}
+        {/* —— Live Tab: Latest Records —— */}
         {isConfigured && activeTab === 'live' && (
           <>
-            {/* Date Range + Controls - ONLY on Live tab */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16,
-                flexWrap: 'wrap',
-                gap: 12,
-                background: 'var(--card-bg)',
-                borderRadius: 10,
-                padding: '12px 16px',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
-                    From:
-                  </label>
-                  <input
-                    type="date"
-                    value={timeFrom}
-                    onChange={(e) => setTimeFrom(e.target.value)}
-                    className="form-input"
-                    style={{ width: 160 }}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
-                    To:
-                  </label>
-                  <input
-                    type="date"
-                    value={timeTo}
-                    onChange={(e) => setTimeTo(e.target.value)}
-                    className="form-input"
-                    style={{ width: 160 }}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
-                    Type:
-                  </label>
-                  <select
-                    value={dType}
-                    onChange={(e) => setDType(e.target.value as 'P' | 'F')}
-                    className="form-input"
-                    style={{ width: 140 }}
-                  >
-                    <option value="P">Partial (P)</option>
-                    <option value="F">Full / Fresh (F)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Button variant="primary" disabled={!isConfigured || isFetching} onClick={handleFetch}>
-                  {fetchMutation.isPending ? 'Starting...' : isFetching && !quickSyncMutation.isPending ? 'Syncing...' : 'Fetch & Sync'}
-                </Button>
-                {/* ── Quick Sync: auto-detects last DB date ── */}
-                <button
-                  disabled={!isConfigured || isFetching}
-                  onClick={() => { setFetchError(null); quickSyncMutation.mutate(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '7px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: isFetching ? 'not-allowed' : 'pointer',
-                    background: isFetching ? 'rgba(52,211,153,0.05)' : 'rgba(52,211,153,0.15)',
-                    border: '1px solid rgba(52,211,153,0.4)', color: isFetching ? '#475569' : '#34d399',
-                    transition: 'all 0.15s',
-                  }}
-                  title={`Sync from ${lastSyncDateLabel} → Today (auto-detected from DB)`}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                    style={quickSyncMutation.isPending ? { animation: 'spin 0.8s linear infinite' } : {}}>
-                    <path d="M1 4v6h6M23 20v-6h-6"/>
-                    <path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/>
-                  </svg>
-                  {quickSyncMutation.isPending ? 'Starting...' : (
-                    <>Quick Sync{lastSyncDateLabel !== '—' && <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 3 }}>from {lastSyncDateLabel}</span>}</>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* —— Error feedback —— */}
-            {fetchError && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  fontSize: 13,
-                  color: '#ef4444',
-                }}
-              >
-                <strong>Error:</strong> {fetchError}
-                <button
-                  onClick={() => setFetchError(null)}
-                  style={{
-                    marginLeft: 10,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#ef4444',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
             {/* Live Records Table */}
             {liveQuery.isLoading ? (
               <div className="loading-spinner">
@@ -1032,7 +917,7 @@ export const CCTNSPage = () => {
             ) : liveData.length === 0 ? (
               <div className="empty-state">
                 <p style={{ fontSize: 15, marginBottom: 8 }}>
-                  No records yet. Click <strong>Fetch & Sync to DB</strong> to pull data from CCTNS.
+                  No records yet. Go to the <strong>Sync History</strong> tab to trigger a sync.
                 </p>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                   This tab shows the latest synced records. Background sync runs every 4 hours.
@@ -1279,6 +1164,121 @@ export const CCTNSPage = () => {
         {/* —— Sync History Tab —— */}
         {isConfigured && activeTab === 'history' && (
           <>
+            {/* Date Range + Controls */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+                flexWrap: 'wrap',
+                gap: 12,
+                background: 'var(--card-bg)',
+                borderRadius: 10,
+                padding: '12px 16px',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
+                    From:
+                  </label>
+                  <input
+                    type="date"
+                    value={timeFrom}
+                    onChange={(e) => setTimeFrom(e.target.value)}
+                    className="form-input"
+                    style={{ width: 160 }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
+                    To:
+                  </label>
+                  <input
+                    type="date"
+                    value={timeTo}
+                    onChange={(e) => setTimeTo(e.target.value)}
+                    className="form-input"
+                    style={{ width: 160 }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontSize: 13, whiteSpace: 'nowrap' }}>
+                    Type:
+                  </label>
+                  <select
+                    value={dType}
+                    onChange={(e) => setDType(e.target.value as 'P' | 'F')}
+                    className="form-input"
+                    style={{ width: 140 }}
+                  >
+                    <option value="P">Partial (P)</option>
+                    <option value="F">Full / Fresh (F)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Button variant="primary" disabled={!isConfigured || isFetching} onClick={handleFetch}>
+                  {fetchMutation.isPending ? 'Starting...' : isFetching && !quickSyncMutation.isPending ? 'Syncing...' : 'Fetch & Sync'}
+                </Button>
+                {/* ── Quick Sync: auto-detects last DB date ── */}
+                <button
+                  disabled={!isConfigured || isFetching}
+                  onClick={() => { setFetchError(null); quickSyncMutation.mutate(); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '7px 14px', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: isFetching ? 'not-allowed' : 'pointer',
+                    background: isFetching ? 'rgba(52,211,153,0.05)' : 'rgba(52,211,153,0.15)',
+                    border: '1px solid rgba(52,211,153,0.4)', color: isFetching ? '#475569' : '#34d399',
+                    transition: 'all 0.15s',
+                  }}
+                  title={`Sync from ${lastSyncDateLabel} → Today (auto-detected from DB)`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    style={quickSyncMutation.isPending ? { animation: 'spin 0.8s linear infinite' } : {}}>
+                    <path d="M1 4v6h6M23 20v-6h-6"/>
+                    <path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/>
+                  </svg>
+                  {quickSyncMutation.isPending ? 'Starting...' : (
+                    <>Quick Sync{lastSyncDateLabel !== '—' && <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 3 }}>from {lastSyncDateLabel}</span>}</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* —— Error feedback —— */}
+            {fetchError && (
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  fontSize: 13,
+                  color: '#ef4444',
+                }}
+              >
+                <strong>Error:</strong> {fetchError}
+                <button
+                  onClick={() => setFetchError(null)}
+                  style={{
+                    marginLeft: 10,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#ef4444',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Live job banner at top of history tab */}
             {activeJobId && (
               <div style={{
