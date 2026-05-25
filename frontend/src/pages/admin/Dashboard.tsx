@@ -11,6 +11,7 @@ import { useFilters } from '@/contexts/FilterContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt, faSyncAlt, faDatabase } from '@fortawesome/free-solid-svg-icons';
 import { ComplaintsDrawer, DrawerFilters } from '@/components/common/ComplaintsDrawer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const StatCard = ({ label, value, subValue, detail, colorClass, onClick }: { label: string; value: string | number; subValue?: string; detail?: React.ReactNode; colorClass: string; onClick?: () => void }) => (
   <div
@@ -135,6 +136,7 @@ const SortDropdown = ({ value, onChange, options }: { value: string, onChange: (
 export const DashboardPage = () => {
   const { filters } = useFilters();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // -- Drawer state ---------------------------------------------------------
   const [drawer, setDrawer] = useState<{ open: boolean; title: string; filters: DrawerFilters }>({
@@ -509,7 +511,7 @@ export const DashboardPage = () => {
   };
 
   return (
-    <Layout>
+    <Layout key={theme}>
       <div className="page-content space-y-6">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
           <div>

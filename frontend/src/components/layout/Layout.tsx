@@ -4,6 +4,7 @@ import { GlobalFilterBar } from './GlobalFilterBar';
 import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTheme } from '../../contexts/ThemeContext';
 export { useChartExpand } from '../../contexts/ChartContext';
 
 interface LayoutProps {
@@ -24,20 +25,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [filterBarOpen, setFilterBarOpen] = useState(false);
   const [chartExpanded, setChartExpanded] = useState(false);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return 'dark';
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+  const { theme, toggleTheme } = useTheme();
 
   const location = useLocation();
   const navigate = useNavigate();

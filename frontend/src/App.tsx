@@ -30,11 +30,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 import { FilterProvider } from './contexts/FilterContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <FilterProvider>
+      <ThemeProvider>
+        <FilterProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -123,6 +125,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </FilterProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

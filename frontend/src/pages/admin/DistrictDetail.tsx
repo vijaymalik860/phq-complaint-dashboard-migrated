@@ -8,6 +8,7 @@ import { getStackedBarOptions } from '@/components/charts/Charts';
 import { DataTable, Column } from '@/components/data/DataTable';
 import { useFilters } from '@/contexts/FilterContext';
 import { ComplaintsDrawer, DrawerFilters } from '@/components/common/ComplaintsDrawer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Mini sort dropdown ─────────────────────────────────────────────────────
 const CAT_SORTS = [
@@ -105,8 +106,9 @@ export const DistrictDetail = () => {
   const { district } = useParams<{ district: string }>();
   const navigate = useNavigate();
   const [catSort, setCatSort] = useState<string>('pending');
+  const { theme } = useTheme();
 
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const isLight = theme === 'light';
   const primaryBlueColor = isLight ? 'var(--primary)' : '#60a5fa';
   const successColor = isLight ? 'var(--success)' : '#4ade80';
   const warningColor = isLight ? 'var(--warning)' : '#fbbf24';

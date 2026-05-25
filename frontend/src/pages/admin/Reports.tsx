@@ -9,6 +9,7 @@ import { reportsApi } from '@/services/api';
 import { useFilters } from '@/contexts/FilterContext';
 import { ComplaintsDrawer, DrawerFilters } from '@/components/common/ComplaintsDrawer';
 import { ByHandBogusTab } from './ByHandBogusTab';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const tabs = [
   { id: 'district', label: 'District' },
@@ -567,6 +568,7 @@ const HabitualComplainantsTab = ({ activeFilters, openDrawer }: {
 export const ReportsPage = () => {
   const [sp] = useSearchParams();
   const type = sp.get('type') || 'district';
+  const { theme } = useTheme();
   const [chartSort, setChartSort] = useState<string>('total');
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const [tableSort, setTableSort] = useState<{ key: string; dir: 'asc' | 'desc' | null } | null>(null);
@@ -697,7 +699,7 @@ export const ReportsPage = () => {
   }, [tableData, type]);
 
   return (
-    <Layout>
+    <Layout key={theme}>
       <div className="page-content">
         <div className="tab-list">
           {tabs.map(t => (

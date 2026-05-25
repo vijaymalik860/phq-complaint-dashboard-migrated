@@ -6,6 +6,7 @@ import { DataTable, Column } from '@/components/data/DataTable';
 import { getDistrictBarOptions, getStackedBarOptions } from '@/components/charts/Charts';
 import { dashboardApi } from '@/services/api';
 import { useFilters } from '@/contexts/FilterContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // ─── Reusable Sort Dropdown ───────────────────────────────────────────────────
 
@@ -147,6 +148,7 @@ const SORT_OPTIONS: SortOption[] = [
 
 export const HotspotsPage = () => {
   const { filters } = useFilters();
+  const { theme } = useTheme();
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''));
 
   const [districtSort, setDistrictSort] = useState<SortKey>('total');
@@ -269,7 +271,7 @@ export const HotspotsPage = () => {
   const categoryChartData = sortedCategoryRows.slice(0, 25).reverse();
 
   return (
-    <Layout>
+    <Layout key={theme}>
       <div className="page-content">
         {dl || cl ? (
           <div className="loading-spinner">
