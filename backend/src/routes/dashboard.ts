@@ -468,6 +468,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
           select: {
             policeStationMasterId: true,
             submitPsCd: true,         // submitting PS code (primary operational field)
+            transferPsCd: true,       // transfer PS code (fallback operational field)
             statusGroup: true,
             statusRaw: true,
             complRegDt: true,
@@ -495,13 +496,22 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
       // 1. policeStationMasterId → name from THIS district's PS map only
       //    (cross-district IDs like QILLA-under-Rohtak won't resolve → Unmapped)
       // 2. submitPsCd as numeric ID → try THIS district's PS map
-      // 3. Unmapped
+      // 3. transferPsCd as numeric ID → fallback to try THIS district's PS map
+      // 4. Unmapped
       let ps: string = UNMAPPED;
       if (comp.policeStationMasterId) {
         ps = stationMapById.get(comp.policeStationMasterId.toString()) || UNMAPPED;
       } else if (comp.submitPsCd) {
         // submitPsCd is a numeric code — try it as a PS master ID within this district
         const parsed = parseInt(comp.submitPsCd, 10);
+        if (!isNaN(parsed)) {
+          ps = stationMapById.get(String(parsed)) || UNMAPPED;
+        }
+      }
+
+      if (ps === UNMAPPED && comp.transferPsCd) {
+        // fallback to transferPsCd
+        const parsed = parseInt(comp.transferPsCd, 10);
         if (!isNaN(parsed)) {
           ps = stationMapById.get(String(parsed)) || UNMAPPED;
         }

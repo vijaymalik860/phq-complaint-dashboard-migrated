@@ -10,6 +10,7 @@ type MappingInput = {
   addressDistrict?: NullableString;
   transferDistrictCd?: NullableString;
   submitPsCd?: NullableString;
+  transferPsCd?: NullableString;
   addressPs?: NullableString;
   submitOfficeCd?: NullableString;
   branch?: NullableString;
@@ -125,6 +126,10 @@ const resolvePoliceStationId = (
   // represents where the complainant lives, not which PS handled the complaint.
   const byCode = toId(firstPresent(input.submitPsCd));
   if (byCode && stationIdSet.has(byCode.toString())) return byCode;
+
+  // Fallback to transferPsCd (Transfer PS Code) if submitPsCd is unmapped/not resolved
+  const byTransferCode = toId(firstPresent(input.transferPsCd));
+  if (byTransferCode && stationIdSet.has(byTransferCode.toString())) return byTransferCode;
 
   return null;
 };
@@ -267,6 +272,7 @@ export const remapComplaintMasterIds = async () => {
         addressDistrict: true,
         transferDistrictCd: true,
         submitPsCd: true,
+        transferPsCd: true,
         addressPs: true,
         submitOfficeCd: true,
         branch: true,

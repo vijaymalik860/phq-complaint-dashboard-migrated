@@ -496,7 +496,7 @@ export const DistrictDetail = () => {
                 label="Complaints with enquiry officer not assigned"
                 value={(data?.data?.totalPendingEoNotAssigned || 0).toLocaleString()}
                 subValue={`${totalPending ? Math.round(((data?.data?.totalPendingEoNotAssigned || 0) / totalPending) * 100) : 0}% of Pending Complaints`}
-                colorClass="indigo"
+                colorClass="pink"
                 onClick={() => openDrawer('Complaints with Enquiry Officer Not Assigned', {
                   district: district!,
                   statusGroup: 'pending',

@@ -749,7 +749,7 @@ export const DashboardPage = () => {
               label="Complaints with enquiry officer not assigned"
               value={(s?.totalPendingEoNotAssigned || 0).toLocaleString()}
               subValue={`${s?.totalPending ? Math.round(((s?.totalPendingEoNotAssigned || 0) / s.totalPending) * 100) : 0}% of Pending Complaints`}
-              colorClass="indigo"
+              colorClass="pink"
               onClick={() => openDrawer('Complaints with Enquiry Officer Not Assigned', {
                 ...drawerFiltersForStatus('pending'),
                 statusRaw: 'Pending-EO Not Assigned'

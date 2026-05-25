@@ -482,6 +482,7 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
           OR: [
             { addressPs: { contains: psName, mode: 'insensitive' } },
             { submitPsCd: { contains: psName, mode: 'insensitive' } },
+            { transferPsCd: { contains: psName, mode: 'insensitive' } },
           ],
         });
       }
