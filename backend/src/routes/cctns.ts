@@ -428,12 +428,12 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     const andConditions: any[] = [];
 
 // ── District filter from drill-down navigation ───────────────────────────
-    // When district is passed from DistrictDetail page drill-down (and no global districtIds), 
+    // When district is passed from DistrictDetail page drill-down, 
     // apply the district filter to maintain consistent counts. 
     // We MUST apply the district filter even if policeStationIds is passed because 
     // DistrictDetail counts records for a specific PS by querying with the district filter FIRST, 
     // then grouping by PS. To match those exact counts in the drawer, we must filter by BOTH district and PS.
-    if (district && !districtIds) {
+    if (district) {
       if (district.toLowerCase() === 'unmapped') {
         const allDistricts = await prisma.district.findMany({ select: { id: true } });
         const districtIdsList = allDistricts.map(d => d.id);
@@ -444,10 +444,20 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
           ],
         });
       } else {
-        const districtRecord = await prisma.district.findFirst({
-          where: { name: { equals: district, mode: 'insensitive' } },
-          select: { id: true },
-        });
+        let districtRecord = null;
+        if (/^\d+$/.test(district)) {
+          districtRecord = await prisma.district.findUnique({
+            where: { id: BigInt(district) },
+            select: { id: true },
+          });
+        }
+        if (!districtRecord) {
+          districtRecord = await prisma.district.findFirst({
+            where: { name: { equals: district, mode: 'insensitive' } },
+            select: { id: true },
+          });
+        }
+
         if (districtRecord) {
           andConditions.push({ districtMasterId: districtRecord.id });
         } else {
@@ -494,8 +504,9 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     // IMPORTANT: When navigating from DistrictDetail with a specific PS, we want to filter
     // ONLY by that PS (matching how DistrictDetail counts records for that PS).
     // So we pass PS filter separately and exclude it from globalWhere to avoid any conflicts.
+    // Also, if a specific drill-down district is active, ignore global districtIds filter to prevent cross-district leaks.
     const globalWhere = buildPrismaWhereClause({
-      districtIds,
+      districtIds: district ? undefined : districtIds,
       officeIds,
       classOfIncident,
       fromDate,
@@ -552,10 +563,19 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
     if (unmappedPs === 'true') {
       let targetDistrictIds: bigint[] = [];
       if (district) {
-        const districtRecord = await prisma.district.findFirst({
-          where: { name: { equals: district, mode: 'insensitive' } },
-          select: { id: true },
-        });
+        let districtRecord = null;
+        if (/^\d+$/.test(district)) {
+          districtRecord = await prisma.district.findUnique({
+            where: { id: BigInt(district) },
+            select: { id: true },
+          });
+        }
+        if (!districtRecord) {
+          districtRecord = await prisma.district.findFirst({
+            where: { name: { equals: district, mode: 'insensitive' } },
+            select: { id: true },
+          });
+        }
         if (districtRecord) targetDistrictIds.push(districtRecord.id);
       } else if (districtIds) {
         targetDistrictIds = parseBigIntCsv(districtIds);
@@ -574,6 +594,8 @@ export const cctnsRoutes = async (fastify: FastifyInstance) => {
               { policeStationMasterId: { notIn: psIds } },
             ],
           });
+        } else {
+          andConditions.push({ policeStationMasterId: null });
         }
       } else {
         andConditions.push({ policeStationMasterId: null });

@@ -425,10 +425,17 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     const q = JSON.stringify({ ...(request.query as any), district: request.params.district });
     const data = await cached(`district-analysis:${q}`, 5 * 60 * 1000, async () => {
         const districtParam = decodeURIComponent(request.params.district || '').trim();
-        const baseWhere = buildPrismaWhereClause(request.query);
+        
+        // Ignore global districtIds filter inside district analysis to avoid cross-filter conflicts
+        const queryCopy = { ...request.query as any };
+        delete queryCopy.districtIds;
+        delete queryCopy.district;
+        const baseWhere = buildPrismaWhereClause(queryCopy);
 
         let districtFilter: any;
         let resolvedDistrictId: bigint | null = null;
+        let resolvedDistrictName = districtParam;
+
         if (!districtParam || districtParam.toLowerCase() === UNMAPPED.toLowerCase()) {
           const allDistricts = await prisma.district.findMany({ select: { id: true } });
           const districtIdsList = allDistricts.map(d => d.id);
@@ -439,11 +446,22 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
             ],
           };
         } else {
-          const district = await prisma.district.findFirst({ where: { name: { equals: districtParam, mode: 'insensitive' } } });
+          // Resolve by ID if numeric, otherwise by name
+          let district: any = null;
+          if (/^\d+$/.test(districtParam)) {
+            district = await prisma.district.findUnique({ where: { id: BigInt(districtParam) } });
+          }
+          if (!district) {
+            district = await prisma.district.findFirst({
+              where: { name: { equals: districtParam, mode: 'insensitive' } },
+            });
+          }
+
           if (!district) {
             return { district: districtParam, policeStations: [], categories: [] };
           }
           resolvedDistrictId = district.id;
+          resolvedDistrictName = district.name;
           districtFilter = { districtMasterId: district.id };
         }
 
@@ -611,7 +629,7 @@ export const dashboardRoutes = async (fastify: FastifyInstance) => {
     const totalPendingEoNotAssigned = complaints.filter(comp => comp.statusRaw?.toLowerCase() === 'pending-eo not assigned').length;
 
     return {
-      district: districtParam || UNMAPPED,
+      district: resolvedDistrictName || UNMAPPED,
       policeStations,
       categories,
       avgPendingTime,

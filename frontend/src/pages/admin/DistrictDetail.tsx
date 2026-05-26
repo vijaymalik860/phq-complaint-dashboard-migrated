@@ -345,9 +345,9 @@ export const DistrictDetail = () => {
               }}
             >
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              Back
+              Go to State Dashboard
             </button>
-            <h1 className="text-2xl font-bold text-slate-100">{district} District Analysis</h1>
+            <h1 className="text-2xl font-bold text-slate-100">{(data?.data?.district || district)} District Analysis</h1>
           </div>
           <div className="dashboard-export-buttons">
             <button
@@ -357,7 +357,7 @@ export const DistrictDetail = () => {
 
                 // Sheet 1: Executive Summary
                 const execSummary = [{
-                  'Metric': 'District', 'Value': district
+                  'Metric': 'District', 'Value': data?.data?.district || district
                 }, {
                   'Metric': 'Total Received', 'Value': totalReceived
                 }, {
@@ -423,7 +423,7 @@ export const DistrictDetail = () => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${district}_District_Analysis.xlsx`;
+                a.download = `${data?.data?.district || district}_District_Analysis.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -460,20 +460,20 @@ export const DistrictDetail = () => {
         ) : (
           <>
             <div className="stats-grid">
-              <StatCard label="Total Received" value={totalReceived.toLocaleString()} colorClass="blue" onClick={() => openDrawer(`${district} — All`, { district: district!, statusGroup: 'all', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })} />
+              <StatCard label="Total Received" value={totalReceived.toLocaleString()} colorClass="blue" onClick={() => openDrawer(`${data?.data?.district || district} — All`, { district: district!, statusGroup: 'all', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })} />
               <StatCard
                 label="Total Disposed"
                 value={totalDisposed.toLocaleString()}
                 subValue={`${Math.round((totalDisposed / (totalReceived || 1)) * 100)}% of Total Received`}
                 colorClass="green"
-                onClick={() => openDrawer(`${district} — Disposed`, { district: district!, statusGroup: 'disposed', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
+                onClick={() => openDrawer(`${data?.data?.district || district} — Disposed`, { district: district!, statusGroup: 'disposed', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
               />
               <StatCard
                 label="Total Pending"
                 value={totalPending.toLocaleString()}
                 subValue={`${Math.round((totalPending / (totalReceived || 1)) * 100)}% of Total Received`}
                 colorClass="red"
-                onClick={() => openDrawer(`${district} — Pending`, { district: district!, statusGroup: 'pending', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
+                onClick={() => openDrawer(`${data?.data?.district || district} — Pending`, { district: district!, statusGroup: 'pending', ...Object.fromEntries(Object.entries(filters).filter(([_,v])=>v!=='')) })}
               />
               <StatCard
                 label="Avg. Pending Time"
@@ -486,7 +486,7 @@ export const DistrictDetail = () => {
                 value={data?.data?.oldestPendingDate ? new Date(data.data.oldestPendingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                 subValue="Registration date of oldest pending case"
                 colorClass="purple"
-                onClick={() => openDrawer(`${district} — Oldest Pending`, {
+                onClick={() => openDrawer(`${data?.data?.district || district} — Oldest Pending`, {
                   district: district!,
                   statusGroup: 'pending',
                   sortBy: 'complRegDt',

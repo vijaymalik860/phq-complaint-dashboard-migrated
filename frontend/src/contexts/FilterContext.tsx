@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { resolveRangeDistrictIds } from '../data/rangeMapping';
+import { useAuth } from './AuthContext';
 
 export interface DashboardFilters {
   districtIds: string;
@@ -47,7 +49,9 @@ const FilterContext = createContext<FilterContextType>({
 
 export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [filters, setFilters] = useState<DashboardFilters>(loadFiltersFromStorage);
+  const { user } = useAuth();
 
+  // Persist filters to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
@@ -56,11 +60,53 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [filters]);
 
-  const setFilter = (key: keyof DashboardFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+  // Apply default range filter dynamically when a range user logs in or resets filters
+  useEffect(() => {
+    if (user?.role === 'range' && user.rangeId && !filters.districtIds) {
+      const applyRangeFilter = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch('/api/districts', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return;
+          const json = await res.json();
+          const districts: Array<{ id: string; name: string }> = json.data || [];
+          const ids = resolveRangeDistrictIds(user.rangeId!, districts);
+          if (ids.length > 0) {
+            setFilters((prev) => ({ ...prev, districtIds: ids.join(',') }));
+          }
+        } catch (e) {
+          console.warn('Failed to apply range filter:', e);
+        }
+      };
 
-  const resetFilters = () => setFilters(defaultFilters);
+      applyRangeFilter();
+    }
+  }, [user, filters.districtIds]);
+
+  // Apply default district filter dynamically when a district user logs in or resets filters
+  useEffect(() => {
+    if (user?.role === 'district' && user.districtId && !filters.districtIds) {
+      setFilters((prev) => ({ ...prev, districtIds: user.districtId! }));
+    }
+  }, [user, filters.districtIds]);
+
+  const prevUserIdRef = useRef<number | undefined>(user?.id);
+
+  // Reset filters to default whenever user logs out or changes
+  useEffect(() => {
+    if (prevUserIdRef.current !== user?.id) {
+      setFilters(defaultFilters);
+      prevUserIdRef.current = user?.id;
+    }
+  }, [user?.id]);
+
+  const setFilter = useCallback((key: keyof DashboardFilters, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const resetFilters = useCallback(() => setFilters(defaultFilters), []);
 
   return (
     <FilterContext.Provider value={{ filters, setFilter, resetFilters }}>

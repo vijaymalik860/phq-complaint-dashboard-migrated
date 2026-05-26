@@ -5,6 +5,7 @@ import { useFilters } from '../../contexts/FilterContext';
 import { ChartContext } from '../../contexts/ChartContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faTachometerAlt,
@@ -14,6 +15,8 @@ import {
   faInbox,
   faDatabase,
   faSignOutAlt,
+  faCog,
+  faUserShield,
 } from '@fortawesome/free-solid-svg-icons';
 export { useChartExpand } from '../../contexts/ChartContext';
 
@@ -21,15 +24,13 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-const menuItems = [
-  { path: '/admin/dashboard', label: 'Dashboard', icon: faTachometerAlt },
-  { path: '/admin/highlights', label: 'Hotspots', icon: faFire },
-  { path: '/admin/reports', label: 'Reports', icon: faFileAlt },
-  { path: '/admin/pending', label: 'Pending', icon: faClock },
-  { path: '/admin/complaints', label: 'Complaints', icon: faInbox },
-  { path: '/admin/cctns', label: 'CCTNS', icon: faDatabase },
-];
-
+// Role badge colors
+const ROLE_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  admin:    { label: 'Admin',    color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+  phq:      { label: 'PHQ',     color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
+  district: { label: 'District', color: '#34d399', bg: 'rgba(52,211,153,0.15)' },
+  range:    { label: 'Range',   color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
+};
 
 export const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,6 +38,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [chartExpanded, setChartExpanded] = useState(false);
 
   const { theme, toggleTheme } = useTheme();
+  const { user, isAdmin, logout } = useAuth();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,6 +71,8 @@ export const Layout = ({ children }: LayoutProps) => {
       return isActive ? 2000 : 10000;
     },
     retry: false,
+    // Only poll if admin (CCTNS sync is admin-only)
+    enabled: isAdmin,
   });
 
   useEffect(() => {
@@ -139,16 +143,33 @@ export const Layout = ({ children }: LayoutProps) => {
   const hasActiveFilters = activeFilterCount > 0;
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
+    queryClient.clear();
     navigate('/login');
   };
+
+  // Build dynamic menu based on role
+  const menuItems = [
+    { path: '/admin/dashboard',  label: 'Dashboard',  icon: faTachometerAlt },
+    { path: '/admin/highlights', label: 'Hotspots',   icon: faFire },
+    { path: '/admin/reports',    label: 'Reports',    icon: faFileAlt },
+    { path: '/admin/pending',    label: 'Pending',    icon: faClock },
+    { path: '/admin/complaints', label: 'Complaints', icon: faInbox },
+    // CCTNS — admin only
+    ...(isAdmin ? [{ path: '/admin/cctns', label: 'CCTNS', icon: faDatabase }] : []),
+    // System Management — admin only
+    ...(isAdmin ? [{ path: '/admin/dev/update-code', label: 'System Mgmt', icon: faCog }] : []),
+  ];
 
   const getModuleName = () => {
     const path = location.pathname;
     if (path.includes('/admin/complaints/') && path !== '/admin/complaints') return 'Complaint Details';
+    if (path === '/admin/dev/update-code') return 'System Management';
     const match = menuItems.find(item => path === item.path || path.startsWith(item.path));
     return match ? match.label : 'Dashboard';
   };
+
+  const roleBadge = user ? (ROLE_BADGE[user.role] ?? { label: user.role, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' }) : null;
 
   return (
     <div className="app-container">
@@ -177,7 +198,7 @@ export const Layout = ({ children }: LayoutProps) => {
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -266,6 +287,43 @@ export const Layout = ({ children }: LayoutProps) => {
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
+
+          {/* Elegant User / Role Badge in Header */}
+          {user && roleBadge && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 12px',
+              borderRadius: '6px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-sm)',
+              height: '32px',
+              flexShrink: 0,
+            }}>
+              <FontAwesomeIcon icon={faUserShield} style={{ fontSize: 13, color: roleBadge.color }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                  {user.username}
+                </span>
+                <span style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  letterSpacing: '0.5px',
+                  color: roleBadge.color,
+                  background: roleBadge.bg,
+                  padding: '1px 5px',
+                  borderRadius: '10px',
+                  border: `1px solid ${roleBadge.color}40`,
+                  textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {roleBadge.label}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -329,13 +387,14 @@ export const Layout = ({ children }: LayoutProps) => {
           </button>
         </div>
       )}
+
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              className={`nav-item ${location.pathname === item.path || (item.path === '/admin/dev/update-code' && location.pathname === '/admin/dev/update-code') ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >
               <FontAwesomeIcon icon={item.icon} className="nav-icon" />

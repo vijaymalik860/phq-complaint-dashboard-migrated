@@ -6,11 +6,15 @@ declare module '@fastify/jwt' {
       id: number;
       username: string;
       role: string;
+      districtId?: string | null;
+      rangeId?: string | null;
     };
     user: {
       id: number;
       username: string;
       role: string;
+      districtId?: string | null;
+      rangeId?: string | null;
     };
   }
 }
@@ -19,6 +23,8 @@ export interface AuthUser {
   id: number;
   username: string;
   role: string;
+  districtId?: string | null;
+  rangeId?: string | null;
 }
 
 export const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {

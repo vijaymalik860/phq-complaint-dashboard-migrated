@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticate, AuthUser } from '../middleware/auth.js';
 import { prisma } from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -274,4 +275,162 @@ export async function systemRoutes(app: FastifyInstance) {
       };
     }
   );
+
+  // ─── User Management (admin only) ────────────────────────────────────────
+
+  // GET /api/system/users
+  app.get(
+    '/system/users',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const user = request.user as AuthUser;
+      if (user?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Admin access required.' });
+      }
+      const users = await prisma.admin.findMany({
+        select: { id: true, username: true, role: true, districtId: true, rangeId: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      return { success: true, data: users };
+    }
+  );
+
+  // POST /api/system/users — create a new user
+  app.post(
+    '/system/users',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const reqUser = request.user as AuthUser;
+      if (reqUser?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Admin access required.' });
+      }
+
+      const { username, password, role, districtId, rangeId } = request.body as {
+        username: string;
+        password: string;
+        role: string;
+        districtId?: string;
+        rangeId?: string;
+      };
+
+      if (!username || !password || !role) {
+        return reply.status(400).send({ error: 'username, password, and role are required.' });
+      }
+
+      if (password.length < 6) {
+        return reply.status(400).send({ error: 'Password must be at least 6 characters.' });
+      }
+
+      const existing = await prisma.admin.findUnique({ where: { username } });
+      if (existing) {
+        return reply.status(409).send({ error: 'Username already exists.' });
+      }
+
+      const hashed = await bcrypt.hash(password, 10);
+
+      const created = await prisma.admin.create({
+        data: {
+          username,
+          password: hashed,
+          role,
+          districtId: districtId || null,
+          rangeId: rangeId || null,
+        },
+        select: { id: true, username: true, role: true, districtId: true, rangeId: true, createdAt: true },
+      });
+
+      return { success: true, data: created, message: 'User created successfully.' };
+    }
+  );
+
+  // DELETE /api/system/users/:id
+  app.delete(
+    '/system/users/:id',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const reqUser = request.user as AuthUser;
+      if (reqUser?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Admin access required.' });
+      }
+
+      const { id } = request.params as { id: string };
+      const targetId = parseInt(id, 10);
+
+      if (isNaN(targetId)) return reply.status(400).send({ error: 'Invalid user id.' });
+
+      // Prevent deleting yourself
+      if (targetId === reqUser.id) {
+        return reply.status(400).send({ error: 'Cannot delete your own account.' });
+      }
+
+      const existing = await prisma.admin.findUnique({ where: { id: targetId } });
+      if (!existing) return reply.status(404).send({ error: 'User not found.' });
+
+      await prisma.admin.delete({ where: { id: targetId } });
+      return { success: true, message: 'User deleted.' };
+    }
+  );
+
+  // POST /api/system/users/:id/reset-password — admin resets any user's password
+  app.post(
+    '/system/users/:id/reset-password',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const reqUser = request.user as AuthUser;
+      if (reqUser?.role !== 'admin') {
+        return reply.status(403).send({ error: 'Admin access required.' });
+      }
+
+      const { id } = request.params as { id: string };
+      const { newPassword } = request.body as { newPassword: string };
+
+      if (!newPassword || newPassword.length < 6) {
+        return reply.status(400).send({ error: 'New password must be at least 6 characters.' });
+      }
+
+      const targetId = parseInt(id, 10);
+      if (isNaN(targetId)) return reply.status(400).send({ error: 'Invalid user id.' });
+
+      const existing = await prisma.admin.findUnique({ where: { id: targetId } });
+      if (!existing) return reply.status(404).send({ error: 'User not found.' });
+
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.admin.update({ where: { id: targetId }, data: { password: hashed } });
+
+      return { success: true, message: 'Password reset successfully.' };
+    }
+  );
+
+  // POST /api/system/change-password — authenticated user changes own password
+  app.post(
+    '/system/change-password',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const reqUser = request.user as AuthUser;
+      const { currentPassword, newPassword } = request.body as {
+        currentPassword: string;
+        newPassword: string;
+      };
+
+      if (!currentPassword || !newPassword) {
+        return reply.status(400).send({ error: 'Current and new password are required.' });
+      }
+
+      if (newPassword.length < 6) {
+        return reply.status(400).send({ error: 'New password must be at least 6 characters.' });
+      }
+
+      const admin = await prisma.admin.findUnique({ where: { id: reqUser.id } });
+      if (!admin) return reply.status(404).send({ error: 'User not found.' });
+
+      const isValid = await bcrypt.compare(currentPassword, admin.password);
+      if (!isValid) return reply.status(401).send({ error: 'Current password is incorrect.' });
+
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.admin.update({ where: { id: reqUser.id }, data: { password: hashed } });
+
+      return { success: true, message: 'Password changed successfully.' };
+    }
+  );
 }
+

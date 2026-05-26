@@ -10,12 +10,14 @@ generator client {
 }
 
 model Admin {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  password   String
+  role       String   @default("admin")
+  districtId String?  // For district role: stores district DB id (BigInt as string)
+  rangeId    String?  // For range role: stores range key e.g. "karnal", "hisar"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Complaint {
