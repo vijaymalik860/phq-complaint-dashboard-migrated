@@ -41,6 +41,18 @@ REM ── Start ─────────────────────
 call :log STEP "=== DEPLOY STARTED ==="
 
 REM ── 1. Check prerequisites ────────────────────────────────────────────────────
+REM Dynamically resolve PM2 if it is not in the current PATH (common when running under SYSTEM account)
+where pm2 >nul 2>&1
+if errorlevel 1 (
+    for /d %%U in (C:\Users\*) do (
+        if exist "%%U\AppData\Roaming\npm\pm2.cmd" (
+            set "PATH=!PATH!;%%U\AppData\Roaming\npm"
+            goto :pm2_resolved
+        )
+    )
+)
+:pm2_resolved
+
 call :log STEP "Checking prerequisites (node, git, pm2)..."
 where node >nul 2>&1
 if errorlevel 1 ( call :log FAIL "Node.js not found. Aborting." & exit /b 1 )
